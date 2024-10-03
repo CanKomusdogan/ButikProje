@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using ButikProje.Commons;
 
 namespace ButikProje.Models
 {
@@ -50,5 +53,19 @@ namespace ButikProje.Models
         public int ConnectedProductID { get; set; }
         public string PhotoContent { get; set; }
 
+        /// <summary>
+        /// Converts the <code>PhotoContent</code> property value to base64.
+        /// </summary>
+        /// <returns>The base64 string of PhotoContent. <br /> Will return an empty string if PhotoContent is a URL.</returns>
+        public string ToBase64()
+        {
+            if (!DbCommons.IsURL(PhotoContent))
+            {
+                byte[] imageArray = File.ReadAllBytes(PhotoContent); // Read the image as byte array
+                string base64Image = Convert.ToBase64String(imageArray);
+                return base64Image;
+            }
+            else return string.Empty;
+        }
     }
 }
