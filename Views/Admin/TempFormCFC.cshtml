@@ -1,0 +1,15 @@
+﻿@using (Html.BeginForm("ChangeFooterContent", "Admin", FormMethod.Post))
+{
+    @Html.TextBox("AltbilgiEdit", "", new
+{
+   @id = "footerEditor",
+   @placeholder = "Altbilgi",
+   @type = "text",
+   @class = "border mb-2 p-2 w-100 editor-input",
+   @maxlength = "500",
+   @required = "",
+   @autocomplete = "off"
+})
+    <br />
+    <button type="submit" class="border-0 p-2 text-white bg-gradient w-25 boutique-button mt-3">Ayarla</button>
+}

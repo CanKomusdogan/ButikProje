@@ -1,0 +1,348 @@
+﻿@model DbInterface
+@using ButikProje.Models
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - P&D Boutique</title>
+    @Styles.Render("~/Content/css")
+
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/Scripts/bootstrap.bundle.min.js")
+    @Scripts.Render("~/bundles/modernizr")
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="@Url.Content("/Content/img/boutique.png")" />
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container px-4 px-lg-5">
+            <button id="menu" data-bs-toggle="offcanvas" data-bs-target="#boutiqueNavigationOffcanvas" class="undecorated-button me-5 menu-button"><i class="fa-solid fa-bars"></i>&nbsp; Menu</button>
+            @Html.ActionLink("P&D Boutique", "Index", "Home", null, new { @class = "navbar-brand" })
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                </ul>
+                <div class="p-1 border border-2 rounded-1 d-inline-block">
+                    <form action="@Url.Action("Search", "Home")" method="get" id="searchForm">
+                        <input name="q" id="searchInput" type="search" autocomplete="off" placeholder="Ürün Bul" class="form-control d-inline w-auto sign-form border-0 bg-transparent" />
+                        <button id="searchSubmit" class="btn disabled border-0" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    </form>
+                </div>
+
+                <a id="cartAction" href="@Url.Action("Cart", "Home")" class="btn">
+                    <i class="fa-solid fa-cart-shopping me-2"></i>
+                    Sepet
+                    <span id="cartItemCount" class="badge text-white bg-primary rounded-pill">@Model.CartCount.ToString()</span>
+                </a>
+
+                @if (Request.IsAuthenticated)
+                {
+                    <div id="userDropdown" class="dropdown">
+                        <a class="btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <i class="fa-solid fa-key me-2"></i>
+                                <span>Yönetici</span>
+                            }
+                            else if (User.IsInRole("User"))
+                            {
+                                <i class="fa-solid fa-user me-2"></i>
+                                <span>Kullanıcı</span>
+                            }
+                        </a>
+
+                        <ul class="dropdown-menu rounded-0">
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li><a class="dropdown-item" href="@Url.Action("Index", "Admin")"><small><i class="fa-solid fa-user-tie small me-1"></i></small>Yönetici paneli</a></li>
+                            }
+                            <li><a class="dropdown-item" href="@Url.Action("Orders", "Home")"><small><i class="fa-solid fa-truck small me-1"></i></small> Siparişler</a></li>
+                            <li><button id="signout" class="dropdown-item"><small><i class="fa-solid fa-arrow-right-from-bracket small me-1"></i></small> Çıkış yap</button></li>
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <a href="@Url.Action("Login", "Home")" class="btn">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Giriş yap
+                    </a>
+                }
+
+            </div>
+        </div>
+    </nav>
+    <div class="container body-content">
+        @RenderBody()
+        <hr />
+        <footer class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col">
+                        @if (Model != null && !string.IsNullOrEmpty(Model.FooterText))
+                        {
+                            <p class="m-2 text-center">&copy; @DateTime.Now.Year @Model.FooterText</p>
+                        }
+                        else
+                        {
+                            <p class="m-2 text-center">&copy; @DateTime.Now.Year P&amp;D Boutique Tüm hakları saklıdır.</p>
+                        }
+
+                        @*Do not change.*@
+                        <h6 class="text-center">Bu websitesi tamamen <b>Can Kömüşdoğan</b> tarafından geliştirilmiştir.</h6>
+                    </div>
+                </div>
+                <div style="transform: scale(125%)" class="row text-center">
+                    @{
+                        TblIletisim contactInfo = new TblIletisim();
+
+                        if (Model.ContactInfo != null)
+                        {
+                            contactInfo = Model.ContactInfo;
+                        }
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(contactInfo.Instagram))
+                    {
+
+                        <div class="col-auto">
+                            <a target="_blank" href="@contactInfo.Instagram">
+                                <i class="fa-brands fa-square-instagram"></i>
+                            </a>
+                        </div>
+
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(contactInfo.Youtube))
+                    {
+
+                        <div class="col-auto">
+                            <a target="_blank" href="@contactInfo.Youtube">
+                                <i class="fa-brands fa-square-youtube"></i>
+                            </a>
+                        </div>
+
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(contactInfo.Mail))
+                    {
+
+                        <div class="col-auto">
+                            <a href="mailto:@contactInfo.Mail">
+                                <i class="fa-solid fa-envelope"></i>
+                            </a>
+                        </div>
+
+
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(contactInfo.TelNo))
+                    {
+                        <div class="col-auto">
+                            <a data-bs-toggle="tooltip" data-bs-placement="right" title="@contactInfo.TelNo" href="tel:@contactInfo.TelNo">
+                                <i class="fa-solid fa-square-phone"></i>
+                            </a>
+                        </div>
+
+                    }
+                </div>
+            </div>
+        </footer>
+        <a href="https://wa.me/905332378185" target="_blank" role="button" name="WhatsappIletisim">
+            <svg style="bottom: 14px; right: 16px; box-sizing: border-box; position: fixed !important; z-index: 16000160 !important; direction: ltr; text-align: right; width: 50px; height: 50px" xmlns="http://www.w3.org/2000/svg" viewBox="2619 506 120 120" width="70" height="70" class="cool-hover">
+                <defs>
+                    <style type="text/css">
+                        .cls-1 {
+                            fill: #27d045;
+                        }
+
+                        .cls-2, .cls-5 {
+                            fill: none;
+                        }
+
+                        .cls-2 {
+                            stroke: #fff;
+                            stroke-width: 5px;
+                        }
+
+                        .cls-3 {
+                            fill: #fff;
+                        }
+
+                        .cls-4 {
+                            stroke: none;
+                        }
+                    </style>
+                </defs>
+                <g data-name="Group 36" id="Group_36" transform="translate(2300 73)"><circle class="cls-1" cx="60" cy="60" data-name="Ellipse 18" id="Ellipse_18" r="60" transform="translate(319 433)" /><g data-name="Group 35" id="Group_35" transform="translate(254 386)"><g data-name="Group 34" id="Group_34"><g class="cls-2" data-name="Ellipse 19" id="Ellipse_19" transform="translate(94 75)"><circle class="cls-4" cx="31.5" cy="31.5" r="31.5" /><circle class="cls-5" cx="31.5" cy="31.5" r="29" /></g><path class="cls-3" d="M1424,191l-4.6,16.3,16.9-4.7.9-5.2-11,3.5,2.9-10.5Z" data-name="Path 126" id="Path_126" transform="translate(-1325 -68)" /><path class="cls-1" d="M1266,90c0-.1,3.5-11.7,3.5-11.7l8.4,7.9Z" data-name="Path 127" id="Path_127" transform="translate(-1165 43)" /></g><path class="cls-3" d="M1439.3,160.6a9.4,9.4,0,0,0-3.9,6.1c-.5,3.9,1.9,7.9,1.9,7.9a50.876,50.876,0,0,0,8.6,9.8,30.181,30.181,0,0,0,9.6,5.1,11.378,11.378,0,0,0,6.4.6,9.167,9.167,0,0,0,4.8-3.2,9.851,9.851,0,0,0,.6-2.2,5.868,5.868,0,0,0,0-2c-.1-.7-7.3-4-8-3.8s-1.3,1.5-2.1,2.6-1.1,1.6-1.9,1.6-4.3-1.4-7.6-4.4a15.875,15.875,0,0,1-4.3-6s.6-.7,1.4-1.8a5.664,5.664,0,0,0,1.3-2.4c0-.5-2.8-7.6-3.5-7.9A11.852,11.852,0,0,0,1439.3,160.6Z" data-name="Path 128" id="Path_128" transform="translate(-1326.332 -68.467)" /></g></g>
+            </svg>
+        </a>
+
+        <div id="multiModal" class="modal fade" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <p class="text-center" id="multiModalText"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn" data-bs-dismiss="modal">Tamam</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="loadingScreen" class="loading-screen justify-content-center align-items-center">
+            <div class="spinner-grow" role="status">
+                <span class="visually-hidden">Lütfen Bekleyiniz...</span>
+            </div>
+        </div>
+
+        <div class="offcanvas offcanvas-start" tabindex="-1" id="boutiqueNavigationOffcanvas" aria-labelledby="boutiqueNavigationOffcanvasTitle">
+            <div class="offcanvas-header">
+                <h3 class="offcanvas-title opacity-75" id="boutiqueNavigationOffcanvasTitle">Kategoriler</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                @foreach (TblKategoriler category in Model.ProductCategories)
+                {
+                    <a href="@Url.Action("Category", "Home", new { categoryName = category.KategoriIsim })" class="btn menu-button">
+                        <h5>@category.KategoriIsim</h5>
+                    </a>
+                    <br />
+                }
+            </div>
+        </div>
+    </div>
+
+    <script src="https://kit.fontawesome.com/dd8a07ad56.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            $('.select-2').select2({
+                width: '300px'
+            });
+
+            const searchSubmit = document.getElementById('searchSubmit');
+            let searchInputValid = false;
+
+            $('#searchInput').on('input', function (e) {
+                const input = e.target.value.trim();
+
+                if (input) {
+                    if ($(searchSubmit).hasClass("disabled") && $(searchSubmit).hasClass("border-0")) {
+                        searchInputValid = true;
+                        $(searchSubmit).removeClass("disabled");
+                        $(searchSubmit).removeClass("border-0")
+                    }
+                } else if (!$(searchSubmit).hasClass("disabled") && !$(searchSubmit).hasClass("border-0")) {
+                    searchInputValid = false;
+                    $(searchSubmit).addClass("disabled")
+                    $(searchSubmit).addClass("border-0")
+                }
+            });
+
+            $('#searchForm').on('submit', function (e) {
+                if (!searchInputValid) {
+                    e.preventDefault();
+                }
+            });
+
+            $(document).ajaxStart(function () {
+                $('#loadingScreen').css('display', 'flex');
+            });
+
+            $(document).ajaxStop(function () {
+                $('#loadingScreen').css('display', 'none');
+            });
+
+            $('#signout').on('click', () => {
+                $.ajax({
+                    url: '@Url.Action("SignOut", "Home")',
+                    type: 'POST',
+                    success: function (response) {
+                        if (response.success) {
+                            $('#userDropdown').remove();
+                            $('#navbarSupportedContent').append('<a href="@Url.Action("Login", "Home")" class="btn"> <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Giriş yap</a>');
+
+                            $('#cartItemCount').text("0");
+
+                            $('#multiModalText').text("Çıkış yapıldı.");
+                            $('#multiModal').modal('show');
+                        } else {
+                            $('#multiModalText').text("Çıkış yapılamadı.\n" + response.message);
+                            $('#multiModal').modal('show');
+                        }
+                    },
+                    error: function (errorThrown) {
+                        $('#multiModalText').text("Çıkış yapılamadı.\n" + errorThrown);
+                        console.error(errorThrown);
+                    }
+                });
+            });
+
+        });
+    </script>
+    <script type="module">
+        const swiper = new Swiper('.swiper-all', {
+            lazy: true,
+            loop: true,
+            spaceBetween: 30,
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true,
+            },
+            touchEventsTarget: 'container',
+        });
+        const swiperProduct = new Swiper('.swiper-product', {
+            lazy: true,
+            loop: true,
+            spaceBetween: 30,
+            navigation: {
+                nextEl: ".swiper-button-next",
+                prevEl: ".swiper-button-prev",
+            },
+            touchEventsTarget: 'container',
+        });
+
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
+    </script>
+
+    <script>
+        (() => {
+            'use strict'
+
+            // Fetch all the forms we want to apply custom Bootstrap validation styles to
+            const forms = document.querySelectorAll('.needs-validation');
+
+            // Loop over them and prevent submission
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+
+    </script>
+    @RenderSection("scripts", required: false)
+
+    <noscript>Bu site javascript kullanıyor. Lütfen sitenin düzgün çalışması için javascripti açınız.</noscript>
+</body>
+</html>

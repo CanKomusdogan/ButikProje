@@ -1,0 +1,26 @@
+﻿@using (Html.BeginForm("ChangeBannerContent", "Admin", FormMethod.Post))
+{
+    @Html.TextBox("AfisBaslikEdit", string.Empty, new
+    {
+        @id = "bannerTitleEditor",
+        @placeholder = "Afiş başlık",
+        @type = "text",
+        @class = "border mb-2 p-2 w-100 editor-input",
+        @maxlength = "50",
+        @required = "required",
+        @autocomplete = "off"
+    })
+
+    @Html.TextBox("AfisAltBaslikEdit", string.Empty, new
+    {
+        @id = "bannerAltTitleEditor",
+        @placeholder = "Afiş alt başlık",
+        @type = "text",
+        @class = "border p-2 w-100 editor-input",
+        @maxlength = "50",
+        @required = "required",
+        @autocomplete = "off"
+    })
+    <br />
+    <button type="submit" class="border-0 p-2 text-white bg-gradient w-25 boutique-button mt-3">Ayarla</button>
+}

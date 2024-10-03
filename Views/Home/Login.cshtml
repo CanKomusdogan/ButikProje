@@ -1,0 +1,595 @@
+﻿@model DbInterface
+@using ButikProje.Models
+@{
+    ViewBag.Title = "Giriş";
+
+    bool errorOccured = !string.IsNullOrEmpty(ViewBag.ErrorMessage);
+}
+<div id="mainHolder" class="row p-4 row-cols-1 row-cols-lg-2 row-cols-xl-2">
+    <div id="memberLogin" name="Uye Girisi" class="col p-4 border mb-3 mb-lg-0 mb-xl-0 mb-xxl-0">
+        <div class="row overflow-hidden">
+            @using (Html.BeginForm("SignIn", "Home", FormMethod.Post, new { @class = "needs-validation", @novalidate = "novalidate", @id = "loginForm" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.ValidationSummary()
+                <h3 class="d-flex align-content-center justify-content-center mb-3">Üye Girişi</h3>
+                <div class="row mb-3 g-2">
+                    <div class="col">
+                        @Html.TextBox("GirisEmail", null, new
+                        {
+                            @id = "loginEmail",
+                            @type = "email",
+                            @placeholder = "E-posta",
+                            @class = "border w-100 p-2 sign-form form-control rounded-1",
+                            @maxlength = "320",
+                            @required = "required",
+                            @autocomplete = "off"
+                        })
+                    </div>
+                </div>
+                <div class="row row-cols-1 g-2 mb-3">
+                    <div class="col">
+                        @Html.TextBox("GirisParola", null, new
+                        {
+                            @id = "loginPassword",
+                            @type = "password",
+                            @placeholder = "Parola",
+                            @class = "border w-100 p-2 sign-form form-control rounded-1",
+                            @minlength = "8",
+                            @required = "required",
+                            @autocomplete = "off"
+                        })
+                    </div>
+
+                    <div class="col">
+                        <a onclick="window.location.hash='passwordchange';" style="cursor: pointer" class="d-flex flex-row-reverse text-black"
+                           data-bs-toggle="modal" data-bs-target="#passwordChangeModal">Parolamı unuttum</a>
+                    </div>
+                </div>
+                <div class="row g-2">
+                    <div class="col">
+                        <div class="form-check mb-1">
+                            <input formnovalidate="formnovalidate" onchange="toggle()" id="pwdShow" name="ParolaGoster" type="checkbox" class="form-check-input" />
+                            <label for="pwdShow" class="form-check-label">Parolayı Göster</label>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col">
+                        <div class="form-check">
+                            @Html.CheckBox("OnuHatirla", false, new { @id = "remember", @class = "form-check-input", @formnovalidate = "formnovalidate" })
+                            <label for="remember" class="form-check-label">Beni Hatırla</label>
+                        </div>
+                    </div>
+                </div>
+                if (!string.IsNullOrWhiteSpace(ViewBag.ReturnUrl))
+                {
+                    <input name="returnUrl" hidden="hidden" value="@ViewBag.ReturnUrl" />
+                }
+                else
+                {
+                    <input name="returnUrl" hidden="hidden" value="@string.Empty" />
+                }
+                <div class="row g-2 mt-2">
+                    <div class="col">
+                        <button id="loginButton" name="GirisButton" type="submit" disabled class="border-0 p-2 text-white bg-gradient w-50 boutique-button rounded-1">Giriş yap</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+
+    <div id="signUp" name="Kaydol" class="col p-4 border">
+        <div class="row overflow-hidden">
+            @using (Html.BeginForm("Register", "Home", FormMethod.Post, new { @class = "needs-validation", @novalidate = "novalidate", @id = "registerForm" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.ValidationSummary()
+                <h3 class="d-flex align-content-center justify-content-center mb-3">Kaydol</h3>
+                <div class="row row-cols-2 mb-3">
+                    <div class="col">
+                        @Html.TextBox("KaydolAd", null, new
+                   {
+                       @id = "signUpName",
+                       @placeholder = "Adınız",
+                       @autocomplete = "off",
+                       @class = "border p-2 w-100 sign-form form-control rounded-1",
+                       @maxlength = "100",
+                       @required = "required"
+                   })
+                    </div>
+                    <div class="col">
+                        @Html.TextBox("KaydolSoyad", null, new
+                   {
+                       @id = "signUpLastName",
+                       @placeholder = "Soyadınız",
+                       @autocomplete = "off",
+                       @class = "border p-2 w-100 sign-form form-control rounded-1",
+                       @maxlength = "100",
+                       @required = "required"
+                   })
+                    </div>
+                </div>
+                <div class="row row-cols-1 mb-3">
+                    <div class="col mb-3 d-flex align-items-center">
+                        @Html.TextBox("KaydolEmail", null, new
+                   {
+                       @id = "signUpEmail",
+                       @type = "email",
+                       @placeholder = "E-posta",
+                       @autocomplete = "off",
+                       @class = "border p-2 w-100 sign-form form-control rounded-1",
+                       @maxlength = "320",
+                       @required = "required"
+                   })
+                        <span class="ms-3 text-danger d-flex">&ast;</span>
+                    </div>
+                    <div class="col d-flex align-items-center">
+                        <input name="KaydolParola" id="signUpPassword" type="text" data-bs-toggle="tooltip" data-bs-placement="top"
+                               title="En az 8 karakter. En az 1 rakam. En az 1 küçük harf ve en az 1 büyük harf."
+                               aria-label="En az 8 karakter. En az 1 rakam. En az 1 küçük harf ve en az 1 büyük harf."
+                               placeholder="Parola" autocomplete="off" class="border p-2 w-100 sign-form form-control rounded-1" required />
+                        <span class="ms-3 text-danger d-flex">&ast;</span>
+                    </div>
+                </div>
+                <div class="row mt-3 mb-2">
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" id="agrees" name="SozlesmeKabul" required="required" type="checkbox">
+                            <label for="agrees" class="form-check-label"><a href="@Url.Action("UyelikSozlesmesi", "Home")"><b>Üyelik Sözleşmesini</b></a> kabul ediyorum.</label>
+                            <div class="invalid-feedback">
+                                Lütfen üyelik sözleşmesini kabul edin.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col">
+                        <button id="registerButton" type="submit" disabled name="KaydolButton" class="border-0 text-white bg-gradient p-2 boutique-button rounded-1 w-50">Kaydol</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if ((bool)ViewBag.VerificationStarted)
+{
+    <div class="modal modal-static" data-bs-backdrop="static" id="verificationModal" tabindex="-1" aria-labelledby="verificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close modal-dismisser" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="verificationModalBody">
+                    <form id="emailVerifyForm">
+                        <h4 class="text-center mb-4">E-postanıza gelen doğrulama kodunu giriniz</h4>
+                        <p>Eğer gelen mail'i göremiyorsanız lütfen spam klasörünü kontrol ediniz.</p>
+                        <div class="d-flex mb-3">
+                            <input id="codeDigitFirst" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="codeDigitSecond" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="codeDigitThird" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="codeDigitFourth" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="codeDigitFifth" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="codeDigitSixth" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                        </div>
+                        <p id="verificationResultDisplay" class="m-1"></p>
+                        <button id="verifyButton" type="button" class="w-100 btn btn-primary">Doğrula</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="border-0 modal-dismisser p-2 text-white bg-gradient w-25 boutique-button-dismiss rounded-1" data-bs-dismiss="modal">Çık</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if ((bool)ViewBag.PasswordChangeVerificationStarted)
+{
+    <div class="modal modal-static" data-bs-backdrop="static" id="verificationPwdModal" tabindex="-1" aria-labelledby="verificationPwdModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close modal-dismisser" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="verificationPwdModalBody">
+                    <form id="pwdEmailVerifyForm">
+                        <h4 class="text-center mb-2">E-postanıza gelen doğrulama kodunu giriniz</h4>
+                        <p class="text-center mb-4">Eğer gönderilen maili bulamıyorsanız spam klasörüne bakınız.</p>
+                        <div class="d-flex mb-3">
+                            <input id="pwdCodeDigitFirst" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="pwdCodeDigitSecond" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="pwdCodeDigitThird" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="pwdCodeDigitFourth" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="pwdCodeDigitFifth" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                            <input id="pwdCodeDigitSixth" autocomplete="off" type="tel" maxlength="1" pattern="[0-9]" class="border m-1 p-2 verify-input sign-form form-control rounded-1">
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input id="newPassword" autocomplete="off" placeholder="Yeni Parola" type="text" class="sign-form form-control rounded-1" />
+                            <label class="form-label">Yeni Parola</label>
+                        </div>
+
+                        <p id="pwdVerificationResultDisplay" class="m-1"></p>
+                        <button id="pwdVerifyButton" type="button" class="w-100 btn btn-primary">Doğrula</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="border-0 modal-dismisser p-2 text-white bg-gradient w-25 boutique-button-dismiss rounded-1" data-bs-dismiss="modal">Çık</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="passwordChangeModal" tabindex="-1" aria-labelledby="passwordChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="passwordChangeModalLabel">Şifremi Unuttum</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="@Url.Action("ChangePassword", "Home")" method="post">
+
+                <div class="modal-body" id="passwordChangeModalBody">
+                    <div class="row g-3 row-cols-1">
+                        <div class="col">
+                            <div class="form-floating">
+                                <input name="email" class="form-control sign-form" placeholder="E-posta" autocomplete="off" type="email" required="required" />
+                                <label class="form-label">E-posta</label>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <p class="small">Eğer sistemde e-posta kayıtlı ise doğrulama kodu gönderilecektir.</p>
+                        </div>
+                    </div>
+
+
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="border-0 p-2 text-white bg-gradient w-auto boutique-button rounded-1">Devam Et</button>
+                    <button type="button" onclick="window.location.hash = '';" class="border-0 p-2 text-white bg-gradient w-auto boutique-button-dismiss rounded-1" data-bs-dismiss="modal">İptal</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (errorOccured)
+{
+    <div class="modal fade" id="errModal" tabindex="-1" aria-labelledby="errModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title text-danger fs-5" id="errModalLabel">Hata!</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalResultBody">
+                    <span>@ViewBag.ErrorMessage</span>
+                    <br />
+                    <br />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="border-0 p-2 text-white bg-gradient w-25 boutique-button-dismiss rounded-1" data-bs-dismiss="modal">Çık</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section scripts {
+
+    @if (errorOccured)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                $('#errModal').modal('show');
+            });
+        </script>
+    }
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlHash = location.hash;
+
+            if (urlHash === '#passwordchange') {
+                const passwordChangeModal = $('#passwordChangeModal');
+                passwordChangeModal.removeClass('fade').modal('show').addClass('fade');
+            }
+        });
+
+        const elements = {
+            loginPwd: document.getElementById('loginPassword'),
+            loginEmail: document.getElementById('loginEmail'),
+            checkState: document.getElementById('pwdShow'),
+            signUpPwd: document.getElementById('signUpPassword'),
+            signUpEmail: document.getElementById('signUpEmail'),
+            signUpName: document.getElementById('signUpName'),
+            signUpSurname: document.getElementById('signUpLastName'),
+            agreesCheckBox: document.getElementById('agrees'),
+        };
+
+        function toggle() {
+            elements.loginPwd.type = elements.checkState.checked ? "text" : "password";
+        }
+
+        function validatePassword(password) {
+            const minLength = 8;
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasLowerCase = /[a-z]/.test(password);
+            const hasDigit = /\d/.test(password);
+
+            return password.length >= minLength && hasUpperCase && hasLowerCase && hasDigit;
+        }
+
+        function checkLoginValidity() {
+            const isValid = elements.loginPwd.checkValidity() && elements.loginEmail.checkValidity() && validatePassword(elements.loginPwd.value);
+            $('#loginButton').prop('disabled', !isValid);
+        }
+
+        function checkRegisterValidity() {
+            const { signUpPwd, signUpEmail, signUpName, signUpSurname, agreesCheckBox } = elements;
+            const isValid = [signUpPwd, signUpEmail, signUpName, signUpSurname, agreesCheckBox].every(el => el.checkValidity()) && validatePassword(signUpPwd.value);
+            $('#registerButton').prop('disabled', !isValid);
+        }
+
+        [elements.loginPwd, elements.loginEmail].forEach(el => el.addEventListener('input', checkLoginValidity));
+
+        ['signUpPwd', 'signUpEmail', 'signUpName', 'signUpSurname', 'agreesCheckBox'].forEach(id => {
+            elements[id].addEventListener('input', checkRegisterValidity);
+        });
+
+        elements.agreesCheckBox.addEventListener('change', checkRegisterValidity);
+
+    </script>
+
+    @if ((bool)ViewBag.PasswordChangeVerificationStarted)
+    {
+        <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    $('#verificationPwdModal').modal('show');
+
+                    const codeDigit1 = document.getElementById('pwdCodeDigitFirst');
+                    const codeDigit2 = document.getElementById('pwdCodeDigitSecond');
+                    const codeDigit3 = document.getElementById('pwdCodeDigitThird');
+                    const codeDigit4 = document.getElementById('pwdCodeDigitFourth');
+                    const codeDigit5 = document.getElementById('pwdCodeDigitFifth');
+                    const codeDigit6 = document.getElementById('pwdCodeDigitSixth');
+                    const newPassword = document.getElementById('newPassword');
+
+                    const verificationResultDisplay = document.getElementById('pwdVerificationResultDisplay');
+
+                    document.getElementById('pwdVerifyButton').addEventListener('click', function() {
+
+                        let verifyCode = parseInt(codeDigit1.value.toString() + codeDigit2.value.toString() + codeDigit3.value.toString() + codeDigit4.value.toString() + codeDigit5.value.toString() + codeDigit6.value.toString());
+
+                        $.ajax({
+                            url: '@Url.Action("VerifyPasswordChangeCode", "Home")',
+                            type: 'POST',
+                            data: { inputVerifyCode: verifyCode, newPassword: newPassword.value },
+                            success: function(result) {
+                                if (!result.errOcurred) {
+                                    verificationResultDisplay.classList.remove('text-danger');
+                                    verificationResultDisplay.classList.add('text-success');
+                                    verificationResultDisplay.textContent = result.message;
+
+                                    setTimeout(() => {
+                                        $('#pwdVerificationModal').modal('hide');
+                                    }, 1000);
+                                } else {
+                                    verificationResultDisplay.classList.remove('text-success');
+                                    verificationResultDisplay.classList.add('text-danger');
+                                    verificationResultDisplay.textContent = result.message;
+                                }
+                            },
+                            error: function(error) {
+                                console.error(error);
+                            }
+                        });
+                    });
+
+                    const form = document.querySelector('#pwdEmailVerifyForm');
+                    const inputs = form.querySelectorAll('.verify-input');
+                    const KEYBOARDS = {
+                        backspace: 8,
+                        arrowLeft: 37,
+                        arrowRight: 39
+                    };
+
+                    function handleInput(e) {
+                        const input = e.target;
+                        const nextInput = input.nextElementSibling;
+                        if (nextInput && input.value) {
+                            nextInput.focus();
+                            if (nextInput.value) {
+                                nextInput.select();
+                            }
+                        }
+                    }
+
+                    function handlePaste(e) {
+                        e.preventDefault();
+                        const paste = e.clipboardData.getData('text');
+                        inputs.forEach((input, i) => {
+                            input.value = paste[i] || "";
+                        });
+                    }
+
+                    function handleBackspace(e) {
+                        const input = e.target;
+                        if (input.value) {
+                            input.value = "";
+                            return;
+                        }
+
+                        input.previousElementSibling.focus();
+                    }
+
+                    function handleArrowLeft(e) {
+                        const previousInput = e.target.previousElementSibling;
+                        if (!previousInput) return;
+                        previousInput.focus();
+                    }
+
+                    function handleArrowRight(e) {
+                        const nextInput = e.target.nextElementSibling;
+                        if (!nextInput) return;
+                        nextInput.focus();
+                    }
+
+                    form.addEventListener('input', handleInput);
+                    inputs[0].addEventListener('paste', handlePaste);
+
+                    inputs.forEach((input) => {
+                        input.addEventListener('focus', (e) => {
+                            setTimeout(() => {
+                                e.target.select();
+                            }, 0);
+                        });
+
+                        input.addEventListener('keydown', (e) => {
+                            switch (e.keyCode) {
+                                case KEYBOARDS.backspace:
+                                    handleBackspace(e);
+                                    break;
+                                case KEYBOARDS.arrowLeft:
+                                    handleArrowLeft(e);
+                                    break;
+                                case KEYBOARDS.arrowRight:
+                                    handleArrowRight(e);
+                                    break;
+                                default:
+                            }
+                        });
+                    });
+});
+        </script>
+    }
+
+
+    @if ((bool)ViewBag.VerificationStarted)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                $('#verificationModal').modal('show');
+
+                const codeDigit1 = document.getElementById('codeDigitFirst');
+                const codeDigit2 = document.getElementById('codeDigitSecond');
+                const codeDigit3 = document.getElementById('codeDigitThird');
+                const codeDigit4 = document.getElementById('codeDigitFourth');
+                const codeDigit5 = document.getElementById('codeDigitFifth');
+                const codeDigit6 = document.getElementById('codeDigitSixth');
+
+                const verificationResultDisplay = document.getElementById('verificationResultDisplay');
+
+                document.getElementById('verifyButton').addEventListener('click', function() {
+
+                    let verifyCode = parseInt(codeDigit1.value.toString() + codeDigit2.value.toString() + codeDigit3.value.toString() + codeDigit4.value.toString() + codeDigit5.value.toString() + codeDigit6.value.toString());
+
+                    $.ajax({
+                        url: '@Url.Action("VerifyEmail", "Home")',
+                        type: 'POST',
+                        data: { inputVerifyCode: verifyCode },
+                        success: function(result) {
+                            if (!result.errOcurred) {
+                                verificationResultDisplay.classList.remove('text-danger');
+                                verificationResultDisplay.classList.add('text-success');
+                                verificationResultDisplay.textContent = result.message;
+
+                                setTimeout(() => {
+                                    $('#verificationModal').modal('hide');
+                                }, 1000);
+                            } else {
+                                verificationResultDisplay.classList.remove('text-success');
+                                verificationResultDisplay.classList.add('text-danger');
+                                verificationResultDisplay.textContent = result.message;
+                            }
+                        },
+                        error: function(error) {
+                            console.error(error);
+                        }
+                    });
+                });
+
+                const form = document.querySelector('#emailVerifyForm');
+                const inputs = form.querySelectorAll('.verify-input');
+                const KEYBOARDS = {
+                    backspace: 8,
+                    arrowLeft: 37,
+                    arrowRight: 39
+                };
+
+                function handleInput(e) {
+                    const input = e.target;
+                    const nextInput = input.nextElementSibling;
+                    if (nextInput && input.value) {
+                        nextInput.focus();
+                        if (nextInput.value) {
+                            nextInput.select();
+                        }
+                    }
+                }
+
+                function handlePaste(e) {
+                    e.preventDefault();
+                    const paste = e.clipboardData.getData('text');
+                    inputs.forEach((input, i) => {
+                        input.value = paste[i] || "";
+                    });
+                }
+
+                function handleBackspace(e) {
+                    const input = e.target;
+                    if (input.value) {
+                        input.value = "";
+                        return;
+                    }
+
+                    input.previousElementSibling.focus();
+                }
+
+                function handleArrowLeft(e) {
+                    const previousInput = e.target.previousElementSibling;
+                    if (!previousInput) return;
+                    previousInput.focus();
+                }
+
+                function handleArrowRight(e) {
+                    const nextInput = e.target.nextElementSibling;
+                    if (!nextInput) return;
+                    nextInput.focus();
+                }
+
+                form.addEventListener('input', handleInput);
+                inputs[0].addEventListener('paste', handlePaste);
+
+                inputs.forEach((input) => {
+                    input.addEventListener('focus', (e) => {
+                        setTimeout(() => {
+                            e.target.select();
+                        }, 0);
+                    });
+
+                    input.addEventListener('keydown', (e) => {
+                        switch (e.keyCode) {
+                            case KEYBOARDS.backspace:
+                                handleBackspace(e);
+                                break;
+                            case KEYBOARDS.arrowLeft:
+                                handleArrowLeft(e);
+                                break;
+                            case KEYBOARDS.arrowRight:
+                                handleArrowRight(e);
+                                break;
+                            default:
+                        }
+                    });
+                });
+            });
+        </script>
+    }
+}
+

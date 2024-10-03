@@ -1,0 +1,228 @@
+﻿@model DbInterface
+@using ButikProje.Models
+@{
+    ViewBag.Title = "Checkout";
+
+    decimal price = 0;
+    TblButikKullanicilar user = DbUsers.GetCurrentUser(User);
+
+    string email = user == null ? string.Empty : user.Email;
+    string name = user == null ? string.Empty : user.Ad;
+    string surname = user == null ? string.Empty : user.Soyad;
+
+    using (masterEntities db = new masterEntities())
+    {
+        foreach (TblSepet item in Model.ProductsInCart)
+        {
+            price += db.TblUrunTanims.Where(x => x.UrunId == item.UrunId).Sum(x => x.UrunFiyat);
+        }
+    }
+
+    string formRedirection = "Purchase";
+    if (ViewBag.SingleItemPurchase != null && (bool)ViewBag.SingleItemPurchase)
+    {
+        formRedirection = "PurchaseItem";
+        TempData["SingleItemID"] = (int)ViewBag.SingleItemID;
+    }
+
+    bool errOccured = ViewBag.ErrMsg != null && !string.IsNullOrWhiteSpace(ViewBag.ErrMsg);
+}
+
+
+@using (Html.BeginForm(formRedirection, "Home", FormMethod.Post, new { @class = "needs-validation", @novalidate = "novalidate" }))
+{
+    <div style="font-family: Montserrat !important" class="row px-0 px-md-5 px-lg-5 px-xl-5 row-cols-1 row-cols-lg-2 row-cols-xl-2">
+        <div class="col border-start rounded-1 p-4">
+            <h4>İletişim</h4>
+            <div class="row mt-1 mb-4">
+                <div class="col">
+                    <div class="form-floating">
+                        @Html.TextBox("contactInfo", email, new { @class = "sign-form w-100 form-control form-control-sm rounded-1", @placeholder = string.Empty, @type = "email", @autocomplete = "off", @required = "required" })
+                        <label class="form-label">E-posta</label>
+                    </div>
+                </div>
+            </div>
+            <h4>Teslimat</h4>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="form-floating">
+                        <select name="country" class="form-select rounded-1 w-100 sign-form">
+                            <option>Türkiye</option>
+                        </select>
+                        <label class="form-label">Ülke</label>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="row row-cols-2 mt-1 mb-3">
+
+                <div class="col">
+                    <div class="form-floating">
+                        @Html.TextBox("buyerName", name, new { @class = "sign-form w-100 form-control form-control-sm rounded-1", @placeholder = string.Empty, @autocomplete = "off", @required = "required" })
+                        <label class="form-label">Ad</label>
+                    </div>
+
+                </div>
+                <div class="col">
+                    <div class="form-floating">
+                        @Html.TextBox("buyerSurname", surname, new { @class = "sign-form w-100 form-control form-control-sm rounded-1", @placeholder = string.Empty, @autocomplete = "off", @required = "required" })
+                        <label class="form-label">Soyad</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="form-floating">
+                        @Html.TextBox("company", string.Empty, new { @class = "sign-form w-100 form-control form-control-sm rounded-1", @placeholder = string.Empty, @autocomplete = "off" })
+                        <label class="form-label">Şirket (isteğe bağlı)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="form-floating">
+                        @Html.TextBox("address", string.Empty, new { @class = "sign-form w-100 form-control rounded-1", @placeholder = string.Empty, @autocomplete = "off", @required = "required" })
+                        <label class="form-label">Adres</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row row-cols-2 mb-3">
+                <div class="col">
+                    <div class="form-floating">
+                        @Html.TextBox("postalCode", string.Empty, new { @class = "sign-form w-100 form-control form-control-sm rounded-1", @placeholder = string.Empty, @autocomplete = "off", @required = "required", @inputmode = "numeric" })
+                        <label class="form-label">Posta Kodu</label>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-floating">
+                        @Html.TextBox("city", string.Empty, new { @class = "sign-form w-100 form-control rounded-1", @placeholder = string.Empty, @autocomplete = "off", @required = "required" })
+                        <label class="form-label">Şehir</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="form-floating">
+                        @Html.TextBox("telno", string.Empty, new { @class = "sign-form w-100 form-control rounded-1", @placeholder = string.Empty, @maxlength = "15", @autocomplete = "off", @required = "required", @type = "tel", @pattern = "[0-9]*", @oninput = "this.value = this.value.replace(/[^0-9]/g, '');" })
+                        <label class="form-label">Telefon</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col">
+                    <div class="form-check">
+                        @Html.CheckBox("saveInfo", false, new { @class = "form-check-input rounded-1" })
+                        <label class="form-check-label">Bir sonraki işlem için bu bilgileri kaydet</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col">
+                    <button type="submit" class="btn text-white w-100 h-100" style="background-color: #86b7fe">Öde</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-5  border-start rounded-1 p-4">
+            @foreach (var cartProduct in Model.ProductsInCart.GroupBy(x => x.UrunId))
+            {
+                DbProduct product = Model.Products.Find(x => x.ID == cartProduct.FirstOrDefault().UrunId);
+
+                DbProductPhoto productPhoto = product.Photos.OrderByDescending(x => x.ID).FirstOrDefault();
+                string productPhotoContent = productPhoto.PhotoContent;
+
+                bool productHasPhoto = false;
+                if (productPhoto != null && !string.IsNullOrEmpty(productPhoto.PhotoContent))
+                {
+                    productHasPhoto = true;
+                }
+
+                int productCount = Model.ProductsInCart.Where(x => x.UrunId == cartProduct.FirstOrDefault().UrunId).Count();
+
+                <a class="text-black text-decoration-none" href="@Url.Action("Product", "Home", new { name = product.Name })">
+                    <div class="row mb-3">
+                        <div class="col-auto pe-0 position-relative">
+                            @if (productHasPhoto)
+                            {
+                                <img class="border rounded-1" src="@productPhotoContent" loading="lazy" style="object-fit: contain" width="64" height="64" />
+                            }
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-secondary">
+                                @productCount
+                            </span>
+                        </div>
+                        <div class="col-5 pe-3">
+                            <p>@product.Name</p>
+                            <p class="text-muted small"></p>
+                        </div>
+                        <div class="col-auto mt-2 mt-lg-0 mt-xl-0">
+                            <p>₺@product.Price</p>
+                        </div>
+                        @if (product.OnSale)
+                        {
+                            <div class="col">
+                                <p class="text-muted text-decoration-line-through">₺@product.OldPrice</p>
+                            </div>
+                        }
+                    </div>
+                </a>
+            }
+            <div class="row row-cols-1 mb-3">
+                <div class="col">
+                    <h5>Toplam</h5>
+                </div>
+                <div class="col">
+                    <h5>₺@price</h5>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-auto">
+                    <div class="form-floating">
+                        @Html.TextBox("promoCode", null, new { @class = "sign-form form-control w-100 form-control-sm rounded-1", @placeholder = string.Empty, @autocomplete = "off" })
+                        <label class="form-label">Promosyon kodu</label>
+                    </div>
+                </div>
+                <div class="col-auto mt-2 mt-lg-0 mt-xl-0">
+                    <button type="button" class="btn btn-sm rounded-1 btn-outline-secondary w-100 h-100">Uygula</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (errOccured)
+{
+    <div class="modal" id="errMsgModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <span class="text-danger">
+                        @ViewBag.ErrMsg
+                    </span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tamam</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@section scripts {
+    @if (errOccured)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                $('#errMsgModal').modal('show');
+            });
+        </script>
+    }
+}

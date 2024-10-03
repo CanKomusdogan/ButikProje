@@ -1,0 +1,186 @@
+﻿@model DbInterface
+@using ButikProje.Models
+@using System.Data.Entity
+@{
+    ViewBag.Title = "Sepet";
+
+    bool errOccured = !string.IsNullOrEmpty(ViewBag.ErrMsg);
+
+    decimal total = 0;
+
+    if (Model.ProductsInCart != null)
+    {
+        using (masterEntities db = new masterEntities())
+        {
+            foreach (TblSepet item in Model.ProductsInCart)
+            {
+                total += db.TblUrunTanims.Where(x => x.UrunId == item.UrunId).Sum(x => x.UrunFiyat);
+            }
+        }
+    }
+}
+
+<div class="row">
+    <h2>Sepetteki Ürünler</h2>
+    <hr />
+</div>
+<div style="font-family: Montserrat !important" class="row row-cols-1 row-cols-lg-2 row-cols-xl-2 row-cols-xxl-2">
+    @if (Model != null && Model.ProductsInCart != null && Model.ProductsInCart.Any())
+    {
+        <div id="cartItems" class="col col-lg-9 col-xl-9 col-xxl-9">
+            @foreach (var item in Model.ProductsInCart.GroupBy(x => x.UrunId))
+            {
+                string productName = string.Empty;
+                string productPhotoUrl = string.Empty;
+
+                TblSepet itemFirst = item.First();
+                using (masterEntities db = new masterEntities())
+                {
+                    TblUrunTanim product = db.TblUrunTanims.Include(x => x.TblUrunFotoes).FirstOrDefault(x => x.UrunId == itemFirst.UrunId);
+                    productName = product.UrunIsim;
+
+                    TblUrunFoto productPhoto = product.TblUrunFotoes.OrderByDescending(x => x.FotoId).FirstOrDefault(x => x.UrunId == itemFirst.UrunId);
+
+                    if (productPhoto != null && !string.IsNullOrWhiteSpace(productPhoto.UrunFoto))
+                    {
+                        productPhotoUrl = Url.Content(productPhoto.UrunFoto);
+                    }
+
+
+
+                    <div id="item-@product.UrunId" class="row border p-2 border-opacity-75 rounded-1 mb-3">
+
+                        <div class="col-auto">
+                            <a href="@Url.Action("Product", "Home", new { name = productName })">
+                                @if (!string.IsNullOrWhiteSpace(productPhotoUrl))
+                                {
+                                    <img src="@productPhotoUrl" class="img-thumbnail" width="80" height="115" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-up-right-from-square"></i>
+                                }
+                            </a>
+                        </div>
+
+                        <div class="col-auto">
+                            <h6>@productName</h6>
+                            <span id="itemPrice-@product.UrunId" hidden="hidden">@product.UrunFiyat</span>
+
+                            <div class="border d-flex justify-content-between align-items-center rounded">
+                                <div class="product-counter">
+                                    <button data-item-id="@product.UrunId" class="removeCartItem btn" type="button"><i class="fa-solid fa-minus small"></i></button>
+                                    <div id="itemCount-@product.UrunId" class="fw-bold pe-3">@Model.ProductsInCart.Where(x => x.UrunId == itemFirst.UrunId).Count()</div>
+                                </div>
+
+                            </div>
+
+
+                        </div>
+                    </div>
+
+                }
+            }
+        </div>
+
+        <div class="col col-lg-2 col-xl-2 col-xxl-2 ms-0 ms-lg-4 ms-xl-4 ms-xxl-4 h-75 border p-4 border-opacity-75 rounded-1">
+            <div class="row row-cols-1">
+                <div class="col">
+                    <h5>Özet</h5>
+                </div>
+                <div class="col">
+                    <p>Sipariş Toplamı &nbsp; <span id="totalPrice" style="font-weight: 600">@total</span> <span style="font-weight: 600"> TL</span> </p>
+                </div>
+            </div>
+            <div class="row">
+                <a href="@Url.Action("Checkout", "Home")" class="shadow text-decoration-none boutique-button text-white text-center p-2 rounded-1">Siparişi Tamamla</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="col">
+            <span>Sepetinizde herhangi bir ürün bulunmamakta.</span>
+        </div>
+    }
+</div>
+
+
+@if (errOccured)
+{
+    <div id="cartErrModal" class="modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@ViewBag.ErrMsg</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tamam</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section scripts {
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            $('#cartItems').on('click', '.removeCartItem', function() {
+                var cartItemId = $(this).data('item-id');
+
+                $.ajax({
+                    type: 'POST',
+                    url: '@Url.Action("RemoveCartItem", "Home")',
+                    dataType: 'json',
+                    data: { itemId: cartItemId },
+                    success: function(data) {
+                        if (!data.success) {
+                            console.error(data.message);
+                            return;
+                        }
+
+                        updateTotalPrice(data.newTotalPrice);
+
+                        if (!data.quantityOver1) {
+                            removeCartItem(data.removedItemId);
+                        } else {
+                            updateItemCount(data.removedItemId);
+                        }
+                    },
+                    error: function(error) {
+                        console.error("Error removing cart item:", error);
+                    }
+                });
+            });
+
+            function updateTotalPrice(newPrice) {
+                $('#totalPrice').text(newPrice);
+            }
+
+            function removeCartItem(itemId) {
+                $('#item-' + itemId).remove();
+            }
+
+            function updateItemCount(itemId) {
+                let itemCountElement = $('#itemCount-' + itemId);
+                let itemCount = parseInt(itemCountElement.text(), 10);
+                itemCountElement.text((itemCount - 1).toString());
+            }
+        });
+
+    </script>
+
+    @if (errOccured)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                $('#cartErrModal').modal('show');
+            });
+        </script>
+    }
+}
+

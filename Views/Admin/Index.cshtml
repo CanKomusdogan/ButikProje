@@ -1,0 +1,1400 @@
+﻿@model DbInterface
+@using ButikProje.Models
+@using System.Data.Entity
+@{
+    ViewBag.Title = "Yönetici Panel";
+
+    bool errorOcurred = !string.IsNullOrWhiteSpace(ViewBag.Result);
+}
+
+<main>
+    <div id="adminContainer" class="container p-3 border border-2 rounded-1 shadow-sm overflow-hidden">
+        <div class="align-items-start">
+            <div class="nav nav-pills me-5 mb-5" id="v-pills-tab" role="tablist">
+                <a class="nav-link nav-link-pill active" id="vPillHomeAdmin" data-bs-toggle="pill" data-bs-target="#vPillAdmin" href="#0" type="button" role="tab" aria-controls="vPillAdmin" aria-selected="true"><i class="fa-solid fa-house"></i></a>
+                <a class="nav-link nav-link-pill" id="vPillTextEditorTab" data-bs-toggle="pill" data-bs-target="#vPillTextEditor" href="#1" type="button" role="tab" aria-controls="vPillTextEditor" aria-selected="false"><i class="fa-solid fa-pen me-2"></i> Arayüz Düzenleme</a>
+                <a class="nav-link nav-link-pill" id="vPillProductEditorTab" data-bs-toggle="pill" data-bs-target="#vPillProductEditor" href="#2" type="button" role="tab" aria-controls="vPillProductEditor" aria-selected="false"><i class="fa-regular fa-pen-to-square me-2"></i> Ürün ekleme/düzenleme</a>
+                <a class="nav-link nav-link-pill" id="vPillUsersTab" data-bs-toggle="pill" data-bs-target="#vPillUsers" href="#3" type="button" role="tab" aria-controls="vPillUsers" aria-selected="false"><i class="fa-solid fa-user-group me-2"></i> Kullanıcılar</a>
+                <a class="nav-link nav-link-pill" id="vPillSettingsTab" data-bs-toggle="pill" data-bs-target="#vPillSettings" href="#4" type="button" role="tab" aria-controls="vPillSettings" aria-selected="false"><i class="fa-solid fa-gears me-2"></i> Site Ayarları</a>
+            </div>
+            <hr />
+            <div style="font-family: Montserrat" class="tab-content" id="v-pills-tabContent">
+                <div class="tab-pane fade show active p-3" id="vPillAdmin" role="tabpanel" aria-labelledby="vPillHomeAdmin" tabindex="0">
+                    <h4 class="mb-4">Siparişler</h4>
+                    <button id="sendNotifButton" class="btn btn-outline-primary">Bildirim Gönder</button>
+                    <div>
+                        @foreach (TblSiparisler order in Model.Orders)
+                        {
+                            <div style="transform: scale(0.9)" class="row mb-3 border border-2 rounded p-3">
+
+                                <a style="zoom: 125%" href="@Url.Action("RemoveOrder", "Admin", new { orderId = order.SiparisId })">
+                                    <span style="z-index: 999; cursor: pointer" class="position-absolute badge bg-danger translate-middle start-100 top-0">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </span>
+                                </a>
+                                @{
+                                    TblButikKullanicilar user = new masterEntities().TblButikKullanicilars.FirstOrDefault(x => x.Id == order.SiparisKullaniciId);
+                                    string username = user != null ? user.Ad : "Geçiçi kullanıcı";
+                                }
+                                <div class="col my-2">
+                                    <h5>Kullanıcı | @username</h5>
+                                </div>
+                                <div class="col-auto flex-column-reverse my-2">
+                                    <h5>ID | @order.SiparisId</h5>
+                                </div>
+                                <hr />
+                                <div class="col">
+                                    <div class="row mb-3">
+                                        @foreach (IGrouping<int, TblSiparisItemler> orderItem in order.TblSiparisItemlers.GroupBy(x => x.UrunId))
+                                        {
+                                            using (masterEntities db = new masterEntities())
+                                            {
+                                                int productId = orderItem.FirstOrDefault().UrunId;
+                                                TblUrunTanim product = db.TblUrunTanims.Include(x => x.TblUrunFotoes).FirstOrDefault(x => x.UrunId == productId);
+                                                string productLink = product != null ? Url.Action("Product", "Home", new { name = product.UrunIsim }) : "#";
+                                                <a style="transform: scale(85%)" href="@productLink" class="col-auto me-3 text-center p-2 border border-1 rounded text-decoration-none text-black">
+                                                    @{
+                                                        int itemCount = order.TblSiparisItemlers.Where(x => x.UrunId == orderItem.FirstOrDefault().UrunId).Count();
+
+                                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary text-white">
+                                                            @itemCount
+                                                        </span>
+
+                                                        if (product != null)
+                                                        {
+                                                            TblUrunFoto productPhoto = product.TblUrunFotoes.OrderByDescending(x => x.FotoId).FirstOrDefault();
+                                                            string photo = productPhoto.UrunFoto;
+                                                            if (productPhoto != null && !string.IsNullOrWhiteSpace(photo))
+                                                            {
+                                                                <img class="img-fluid rounded-1" loading="lazy" width="70" height="105" src="@photo" />
+                                                            }
+
+                                                            <p>@product.UrunIsim</p>
+                                                            <p>₺@product.UrunFiyat</p>
+                                                        }
+                                                        else
+                                                        {
+                                                            <p>Ürün bulunamadı</p>
+                                                        }
+                                                    }
+                                                </a>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col">
+                                        <p>Sipariş Tarihi: @order.SiparisTarih</p>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col">
+                                        <p>@order.SiparisAdres</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="vPillTextEditor" role="tabpanel" aria-labelledby="vPillTextEditorTab" tabindex="0">
+                    <div class="row mb-2">
+                        <h6><b>Lütfen değişiklik yapmadan önce butonların bilgi kutucuklarına göz atınız.</b></h6>
+                    </div>
+                    <div class="row mb-3 row-cols-2 g-3">
+                        <div class="col">
+                            <div class="btn-group editorBtnGroup" role="group">
+                                <button class="boutique-button-editor boutique-button-text-editor btn text-white text-edit bg-gradient" id="bannerTextEdit" value="cbc" type="button" onclick="editModal(this)" data-bs-toggle="modal" data-bs-target="#infoModal">
+                                    Afiş yazısını düzenle
+                                </button>
+
+                                <button class="boutique-button-editor boutique-button-text-editor btn text-white bg-gradient" id="bannerTextEdit" value="cfc" type="button" onclick="editModal(this)" data-bs-toggle="modal" data-bs-target="#infoModal">
+                                    Altbilgi yazısını düzenle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row row-cols-1">
+                        @using (Html.BeginForm("SetUserAgreement", "Admin"))
+                        {
+                            <div class="col mb-3">
+                                <textarea name="content" class="form-control sign-form" placeholder="Üyelik Sözleşmesi"></textarea>
+                            </div>
+                            <div class="col">
+                                <button class="btn btn-primary">Uygula</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div style="font-family: Montserrat !important" class="tab-pane fade" id="vPillProductEditor" role="tabpanel" aria-labelledby="vPillProductEditorTab" tabindex="0">
+                    <div class="row row-cols-md-2">
+
+                        <div class="col mb-3">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-primary flex-row-reverse mb-3" type="button" name="UrunEkleme" id="productAddingButton" data-bs-toggle="modal" data-bs-target="#productAddingModal" style="width:fit-content; height:fit-content;">
+                                    <i class="fa-regular fa-plus me-1"></i> Ürün ekle
+                                </button>
+
+                                <button class="btn btn-primary flex-row-reverse mb-3" type="button" name="UrunGuncelleme" id="productEditingButton" data-bs-toggle="modal" data-bs-target="#productEditingModal" style="width: fit-content; height: fit-content;">
+                                    <i class="fa-regular fa-pen-to-square me-1"></i> Seçileni düzenle
+                                </button>
+
+                                <button class="btn btn-primary flex-row-reverse mb-3" type="button" name="UrunSilme" id="productDeletingButton" style="width: fit-content; height: fit-content;" data-bs-toggle="modal" data-bs-target="#productRemoveConfirmationModal">
+                                    <i class="fa-solid fa-trash me-1"></i> Seçileni sil
+                                </button>
+                            </div>
+
+                            <div class="col mb-2">
+                                @Html.DropDownList("Urunler", new SelectList(Model.Products, "ID", "Name"), new { @id = "productsListBox", @class = "select-2" })
+                            </div>
+
+                            <hr />
+
+                            <div class="col mb-3">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#createCategoryModal" class="btn btn-primary text-white flex-row-reverse">
+                                        <i class="fa-regular fa-plus me-1"></i> Kategori Ekle
+                                    </button>
+
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#editCategoryModal" id="editCategoryButton" class="btn btn-primary text-white flex-row-reverse">
+                                        <i class="fa-regular fa-pen-to-square me-1"></i> Seçileni Düzenle
+                                    </button>
+
+                                    <button type="button" data-bs-toggle="modal" data-bs-target="#removeCategoryConfirmationModal" id="removeCategoryButton" class="btn btn-primary text-white flex-row-reverse">
+                                        <i class="fa-solid fa-trash me-1"></i> Seçileni Sil
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col">
+                                @Html.DropDownList("Kategoriler", new SelectList(Model.ProductCategories, "Id", "KategoriIsim"), new { @id = "categoriesListBox", @class = "select-2" })
+                            </div>
+
+                        </div>
+                        <div class="col mb-5">
+                            <div id="productViewCard" class="card h-100">
+                                <!--Product image-->
+                                <span hidden="hidden" id="productViewSalePercentage" style="z-index: 999" class="position-absolute badge bg-danger translate-middle start-100 top-0">%-</span>
+                                <div class="card-img-top">
+                                    <div style="height: 400px" id="productViewSwiper" class="swiper swiper-all">
+                                        <div class="swiper-wrapper">
+
+                                        </div>
+                                        <div class="swiper-pagination all-items-pagination">
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--Product details-->
+                                <div class="card-body p-4">
+                                    <div class="text-center">
+                                        <!--Product name-->
+                                        <h5 id="productViewName" class="fw-bolder">Ürün isim</h5>
+                                        <!--Product price-->
+                                        <span hidden="hidden" style="font-family: Montserrat !important" class="text-muted text-decoration-line-through opacity-50" id="productViewOldPriceBefore">₺</span><span class="text-muted text-decoration-line-through opacity-50 me-2" style="font-family: Montserrat !important" hidden="hidden" id="productViewOldPrice">Ürün eski fiyat</span> <span style="font-family: Montserrat !important">₺<span id="productViewPrice">Ürün Fiyat</span></span>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Açıklama
+                                        </button>
+
+                                        <ul class="dropdown-menu">
+                                            <li class="text-center"><span id="productViewInfo"></span></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="vPillUsers" role="tabpanel" aria-labelledby="vPillUsersTab" tabindex="0">
+                    <div class="mx-2">
+                        @using (masterEntities db = new masterEntities())
+                        {
+                            foreach (TblButikKullanicilar user in db.TblButikKullanicilars)
+                            {
+                                <div class="row mb-2 border p-2">
+                                    <div style="width: 50px !important" class="col-auto"><span class="d-flex align-content-center justify-content-center">@user.Id</span></div>
+                                    |
+                                    <div class="col-auto">
+                                        @if (user.Rol == DbUsers.AdminRoleNumber)
+                                        {
+                                            <i class="fa-solid fa-key me-2"></i>
+                                            <span>Yönetici</span>
+                                        }
+                                        else if (user.Rol == DbUsers.UserRoleNumber)
+                                        {
+                                            <i class="fa-solid fa-user me-2"></i>
+                                            <span>Kullanıcı</span>
+                                        }
+                                    </div>
+                                    |
+                                    <div class="col-auto mb-3">
+                                        <span>@user.Ad @user.Soyad</span>
+                                    </div>
+                                    |
+                                    @if (user.Id == Convert.ToInt32(User.Identity.Name))
+                                    {
+                                        <div class="col-auto mb-3">
+                                            <span>Bu kullanıcı sizsiniz</span>
+                                        </div>
+                                    }
+                                    <hr />
+                                    @if (user.Id != Convert.ToInt32(User.Identity.Name))
+                                    {
+                                        <div class="row mb-2">
+                                            <div class="col-auto">
+                                                @using (Html.BeginForm("DeleteUser", "Admin", new { userId = user.Id }))
+                                                {
+                                                    <button type="submit" class="btn btn-sm btn-danger rounded-1 opacity-75"><i class="fa-solid fa-user-slash me-2"></i><span class="butTextBesideIcon">Kullanıcı'yı sil</span></button>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="vPillSettings" role="tabpanel" aria-labelledby="vPillSettingsTab" tabindex="0">
+                    @using (Html.BeginForm("SetSettings", "Admin"))
+                    {
+                        <div class="row mb-4">
+                            <div class="col">
+                                <div class="form-check form-switch">
+                                    @Html.CheckBox("websiteActive", Convert.ToBoolean(new masterEntities().TblButikAyarlars.FirstOrDefault().SiteAktif),
+                                   new { @class = "form-check-input sign-form", @role = "switch", @id = "toggleWebsite" })
+                                    <label class="form-check-label" for="toggleWebsite">Website Aktif</label>
+                                </div>
+                            </div>
+                            @*<div class="col">
+                                    <div class="form-check form-switch">
+                                        @Html.CheckBox("internationalActive", Convert.ToBoolean(new masterEntities().tblButikAyarlar.FirstOrDefault()),
+                                       new { @class = "form-check-input sign-form", @role = "switch", @id = "toggleInternational" })
+                                    </div>
+                                </div>*@
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <button type="submit" class="btn btn-outline-secondary rounded-1 w-25"><i class="fa-solid fa-sliders me-2"></i> Uygula</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="infoModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-static modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="infoModalLabel">Düzenleme Form</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <img loading="lazy" class="img-fluid" id="tipImg" alt="Detay Foto" />
+                    <hr />
+                    <span id="modalBodyText"></span>
+                    <hr />
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="border-0 p-2 text-white bg-gradient w-25 boutique-button-dismiss" data-bs-dismiss="modal">İptal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="createCategoryModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="createCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-static modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="createCategoryModalLabel">Kategori Oluştur</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                @using (Html.BeginForm("CreateCategory", "Admin"))
+                {
+                    <div class="modal-body" id="createCategoryModalBody">
+                        <div class="form-floating">
+                            <input id="createCategoryName" name="inputCategoryName" autocomplete="off" placeholder="Kategori ismi" class="form-control form-control-sm sign-form" />
+                            <label for="createCategoryName" class="form-label">Kategori ismi</label>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="border-0 rounded-1 p-2 text-white bg-gradient w-25 boutique-button">Oluştur</button>
+                        <button type="button" class="border-0 rounded-1 p-2 text-white bg-gradient w-25 boutique-button-dismiss" data-bs-dismiss="modal">İptal</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editCategoryModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-static modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="editCategoryModalLabel">Kategori Değiştir</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                @using (Html.BeginForm("EditCategory", "Admin"))
+                {
+                    <div class="modal-body" id="editCategoryModalBody">
+                        @Html.Hidden("selectedCategoryIdEditForm", string.Empty)
+
+                        <p><span id="categoryToEdit"></span> kategorisini değiştiriyorsunuz.</p>
+
+                        <div class="form-floating">
+                            <input id="newCategoryName" name="newCategoryName" autocomplete="off" placeholder="Yeni Kategori ismi" class="form-control form-control-sm sign-form" />
+                            <label for="newCategoryName" class="form-label">Yeni Kategori ismi</label>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="border-0 rounded-1 p-2 text-white bg-gradient w-25 boutique-button">Güncelle</button>
+                        <button type="button" class="border-0 rounded-1 p-2 text-white bg-gradient w-25 boutique-button-dismiss" data-bs-dismiss="modal">İptal</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="removeCategoryConfirmationModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="removeCategoryConfirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-static modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="removeCategoryConfirmationModalLabel">Kategori Sil</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                @using (Html.BeginForm("DeleteCategory", "Admin"))
+                {
+                    <div class="modal-body" id="editCategoryModalBody">
+                        @Html.Hidden("selectedCategoryIdConfirmationForm", string.Empty)
+
+                        <p><span id="categoryToRemove"></span> kategorisini siliyorsunuz.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="border-0 rounded-1 p-2 text-white bg-gradient w-25 boutique-button">Sil</button>
+                        <button type="button" class="border-0 rounded-1 p-2 text-white bg-gradient w-25 boutique-button-dismiss" data-bs-dismiss="modal">İptal</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-static modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="confirmationModalLabel">Düzenleme Form</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalConfirmationBody">
+                    <hr />
+                    <span id="modalConfirmationBodyText"></span>
+                    <hr />
+
+                </div>
+                <div class="modal-footer">
+                    <button id="confirmButton" type="button" class="border-0 p-2 text-white bg-gradient w-50 boutique-button">Evet</button>
+                    <button type="button" class="border-0 p-2 text-white bg-gradient w-50 boutique-button-dismiss" data-bs-dismiss="modal">İptal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="productRemoveConfirmationModal" tabindex="-1" aria-labelledby="productRemoveConfirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="productRemoveConfirmationModalLabel">Ürün Silme</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="productRemoveConfirmationBody">
+                    <span id="productToRemove"></span>
+                    Ürününü silmek istediğinizden emin misiniz?
+                </div>
+                <div class="modal-footer">
+                    @using (Html.BeginForm("RemoveSelectedProduct", "Admin", FormMethod.Post))
+                    {
+                        @Html.Hidden("selectedProductId", string.Empty)
+                        <button id="productRemoveConfirmButton" type="submit" class="border-0 p-2 text-white bg-gradient w-auto rounded-1 boutique-button">Evet</button>
+                    }
+                    <button type="button" class="border-0 p-2 text-white bg-gradient rounded-1 w-25 boutique-button-dismiss" data-bs-dismiss="modal">İptal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (errorOcurred)
+    {
+        <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="resultModalLabel">Düzenleme Sonuç</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="modalResultBody">
+                        @if (Model != null)
+                        {
+                            if (((string)ViewBag.Result).Equals("Değişiklikler uygulandı.") && ViewBag.ShowSeeResultButton != null && (bool)ViewBag.ShowSeeResultButton)
+                            {
+                                <span>@ViewBag.Result</span>
+                                <br />
+                                <br />
+                                @Html.ActionLink("Değişiklikleri gör", "Index", "Home", null, new { @type = "button", @class = "border-1 p-2 text-white bg-gradient w-50 boutique-button" })
+                            }
+                            else if (((string)ViewBag.Result).Equals("Değişiklikler uygulandı."))
+                            {
+                                <span>@ViewBag.Result</span>
+                                <br />
+                                <br />
+                            }
+                            else
+                            {
+                                <span class="text-danger">Hata!</span>
+                                <br />
+                                <br />
+                                <span class="bg-danger text-white">@ViewBag.Result</span>
+                                <br />
+                                <br />
+                                <span>Eğer bu beklenmedik bir hata ise yazılımcı ile iletişime geçin. Hata mesajını kopyalamayı veya ekran görüntüsünü almayı unutmayın.</span>
+                            }
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="border-0 p-2 text-white bg-gradient w-25 boutique-button-dismiss rounded-1" data-bs-dismiss="modal">Çık</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="modal fade" id="productAddingModal" tabindex="-1" data-bs-backdrop="static" aria-labelledby="productAddingLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="productAddingLabel">Ürün Ekleme</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="productAddingBody">
+                    <div class="card h-100">
+                        <span style="z-index: 999" class="position-absolute badge bg-danger translate-middle start-100 top-0" id="productAddingSalePercentage">%-</span>
+                        <!--Product image-->
+                        <div class="card-img-top">
+                            <div style="height: 400px" id="productAddingSwiper" class="swiper swiper-all">
+                                <div class="swiper-wrapper" id="swiperWrapperModal">
+
+                                </div>
+                                <div class="swiper-pagination all-items-pagination">
+                                </div>
+                            </div>
+                        </div>
+                        <!--Product details-->
+                        <div class="card-body p-4">
+                            <div class="text-center">
+                                <!--Product name-->
+                                <h5 id="previewProductName" class="fw-bolder cursor-text"></h5>
+                                <!--Product price-->
+                                <span id="previewProductOldPriceBefore" hidden="hidden" class="text-muted text-decoration-line-through opacity-50 me-2" style="font-family: Montserrat !important">₺</span><span id="previewProductOldPrice" hidden="hidden" class="text-muted text-decoration-line-through opacity-50 me-2" style="font-family: Montserrat !important"></span> <span style="font-family: Montserrat !important">₺<span id="previewProductPrice"></span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+                    <p> Ürün eklendiğinde kullanıcılara böyle gözükecek.</p>
+                    <br />
+                    @using (Html.BeginForm("AddProduct", "Admin", FormMethod.Post, new { @enctype = "multipart/form-data", @class = "needs-validation", @novalidate = "novalidate", @id = "productCreateForm" }))
+                    {
+                        <div class="row">
+                            <div class="col">
+                                <input type="file" name="InputUrunFotolar" id="inputProductPhotoPreview" class="form-control mb-4" multiple="multiple" accept="image/*" formnovalidate="formnovalidate" />
+                            </div>
+                            <div class="col p-0">
+                                <button id="clearFilesButton" class="btn bg-body border" type="button">
+                                    <i class="fa-solid fa-broom me-2"></i>
+                                    Temizle
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row row-cols-2">
+                            <div class="col">
+                                <input class="form-control mb-4 border w-100 p-2 sign-form rounded-1" id="inputProductUrlPhotoPreview" placeholder="Foto Url" type="url" formnovalidate="formnovalidate">
+                            </div>
+                            <div class="col p-0">
+                                <button id="addImgUrlButton" type="button" class="btn bg-body border">
+                                    <i class="fa-regular fa-plus me-2"></i>
+                                    Ekle
+                                </button>
+                            </div>
+                            @Html.TextArea("inputPhotoUrls", new { @id = "inputUrlPhotoList", @hidden = "hidden", @formnovalidate = "formnovalidate" })
+                        </div>
+                        <!--Product name-->
+                        <div class="col mb-3">
+                            <h5 class="fw-bolder">
+
+                                @Html.TextBox("inputName", string.Empty, new
+                                {
+                                    @id = "inputProductNamePreview",
+                                    @placeholder = "Ürün ismi",
+                                    @autocomplete = "off",
+                                    @class = "form-control border w-100 p-2 sign-form rounded-1",
+                                    @maxlength = "100",
+                                    @required = "required"
+                                })
+                            </h5>
+                            <span id="productCreatingNameMessage" class="text-danger"></span>
+
+                            <div class="invalid-feedback">
+                                Ürün isimi boş olamaz!
+                            </div>
+
+                        </div>
+                        <div class="form-check ms-1">
+                            <label for="inputProductOnSale" class="form-check-label">Ürün indirimde</label>
+                            @Html.CheckBox("inputOnSale", false, new { @id = "inputProductOnSale", @class = "form-check-input rounded-1" })
+                        </div>
+                        <div class="row">
+                            <!--Product price-->
+                            <div class="col">
+                                @Html.Editor("inputPrice", new
+                                {
+                                    htmlAttributes = new
+                                {
+                                    @id = "inputProductPricePreview",
+                                    @placeholder = "Ürün fiyatı (TL)",
+                                    @type = "number",
+                                    @step = "0.01",
+                                    @autocomplete = "off",
+                                    @class = "form-control mb-4 border w-100 p-2 sign-form rounded-1",
+                                    @required = "required"
+                                    }
+                                })
+                                <div class="invalid-feedback">
+                                    Ürün fiyatı boş olamaz!
+                                </div>
+                            </div>
+                            <div class="col">
+                                @Html.Editor("inputOldPrice", new
+                                {
+                                    htmlAttributes = new
+                                {
+                                    @id = "inputProductOldPricePreview",
+                                    @placeholder = "Ürün eski fiyat",
+                                    @type = "number",
+                                    @step = "0.01",
+                                    @autocomplete = "off",
+                                    @style = "display: none;",
+                                    @class = "form-control mb-4 border w-100 p-2 sign-form rounded-1",
+                                    @formnovalidate = "formnovalidate"
+                                }
+                                })
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                @Html.TextArea("inputDescription", null, new { @class = "form-control mb-4 border w-100 p-2 sign-form rounded-1", @placeholder = "Ürün Açıklama", @autocomplete = "off" })
+                            </div>
+                        </div>
+                        <div class="row my-2">
+                            <div class="col">
+                                <label for="inputCategory" class="form-label">Kategori: </label>
+                                @Html.DropDownList("inputCategory", new SelectList(Model.ProductCategories, "Id", "KategoriIsim"), new { @class = "form-select sign-form" })
+                            </div>
+                        </div>
+
+
+                        <div class="modal-footer">
+                            <button id="productCreateSubmitButton" type="submit" class="border-0 p-2 text-white bg-gradient w-25 boutique-button rounded-1">Ekle</button>
+                            <button type="button" class="border-0 p-2 text-white bg-gradient boutique-button-dismiss w-25 rounded-1" data-bs-dismiss="modal">İptal</button>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="productEditingModal" tabindex="-1" data-bs-backdrop="static" aria-labelledby="productEditingLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="productEditingLabel">Ürün Düzenleme</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="productEditingBody">
+                    <div class="card h-100">
+                        <span style="z-index: 999" class="position-absolute badge bg-danger translate-middle start-100 top-0" id="productEditingSalePercentage">%-</span>
+                        <!--Product image-->
+                        <div class="card-img-top">
+                            <div style="height: 400px" id="productEditingSwiper" class="swiper swiper-all">
+                                <div class="swiper-wrapper" id="editSwiperWrapperModal">
+
+                                </div>
+                                <div class="swiper-pagination all-items-pagination">
+                                </div>
+                            </div>
+                        </div>
+                        <!--Product details-->
+                        <div class="card-body p-4">
+                            <div class="text-center">
+                                <!--Product name-->
+                                <h5 id="editPreviewProductName" class="fw-bolder cursor-text"></h5>
+                                <!--Product price-->
+                                <span id="editPreviewProductOldPriceBefore" hidden="hidden" class="text-muted text-decoration-line-through opacity-50 me-2" style="font-family: Montserrat !important">₺</span><span id="editPreviewProductOldPrice" hidden="hidden" class="text-muted text-decoration-line-through opacity-50 me-2" style="font-family: Montserrat !important"></span> <span style="font-family: Montserrat !important">₺<span id="editPreviewProductPrice"></span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <br />
+                    <p> Ürün güncellendiğinde kullanıcılara böyle gözükecek.</p>
+                    <br />
+                    @using (Html.BeginForm("EditSelectedProduct", "Admin", FormMethod.Post, new { @enctype = "multipart/form-data", @class = "needs-validation", @novalidate = "novalidate", @id = "productEditForm" }))
+                    {
+                        <input hidden="hidden" name="selectedProductId" />
+
+                        <div class="row">
+                            <div class="col">
+                                <input type="file" name="newFilePhotos" id="newProductPhotoPreview" class="form-control mb-4" multiple="multiple" accept="image/*" formnovalidate="formnovalidate" />
+                            </div>
+                            <div class="col p-0">
+                                <button id="clearNewFilesButton" class="btn bg-body border" type="button">
+                                    <i class="fa-solid fa-broom me-2"></i>
+                                    Temizle
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row row-cols-2">
+                            <div class="col">
+                                <input class="form-control mb-4 border w-100 p-2 sign-form rounded-1" id="newProductUrlPhotoPreview" placeholder="Foto Url" type="url" formnovalidate="formnovalidate">
+                            </div>
+                            <div class="col p-0">
+                                <button id="addNewImgUrlButton" type="button" class="btn bg-body border">
+                                    <i class="fa-regular fa-plus me-2"></i>
+                                    Ekle
+                                </button>
+                            </div>
+                            @Html.TextArea("newUrlPhotos", new { @id = "newUrlPhotoList", @hidden = "hidden", @formnovalidate = "formnovalidate" })
+                        </div>
+                        <!--Product name-->
+                        <div class="col mb-3">
+                            <h5 class="fw-bolder">
+
+                                @Html.TextBox("newName", string.Empty, new
+                                {
+                                    @id = "newProductNamePreview",
+                                    @placeholder = "Ürün ismi",
+                                    @autocomplete = "off",
+                                    @class = "form-control border w-100 p-2 sign-form rounded-1",
+                                    @maxlength = "100",
+                                    @required = "required"
+                                })
+                            </h5>
+                            <span id="productEditingNameMessage" class="text-danger"></span>
+
+                            <div class="invalid-feedback">
+                                Ürün isimi boş olamaz!
+                            </div>
+
+                        </div>
+                        <div class="form-check ms-1">
+                            <label for="newProductOnSale" class="form-check-label">Ürün indirimde</label>
+                            @Html.CheckBox("onSale", false, new { @id = "newProductOnSale", @class = "form-check-input rounded-1" })
+                        </div>
+                        <div class="row">
+                            <!--Product price-->
+                            <div class="col">
+                                @Html.Editor("newPrice", new
+                                {
+                                    htmlAttributes = new
+                                {
+                                    @id = "newProductPricePreview",
+                                    @placeholder = "Ürün fiyatı (TL)",
+                                    @type = "number",
+                                    @step = "0.01",
+                                    @autocomplete = "off",
+                                    @class = "form-control mb-4 border w-100 p-2 sign-form rounded-1",
+                                    @required = "required"
+                                    }
+                                })
+                                <div class="invalid-feedback">
+                                    Ürün fiyatı boş olamaz!
+                                </div>
+                            </div>
+                            <div class="col">
+                                @Html.Editor("newSalePrice", new
+                                {
+                                    htmlAttributes = new
+                                {
+                                    @id = "newProductOldPricePreview",
+                                    @placeholder = "Ürün eski fiyat",
+                                    @type = "number",
+                                    @step = "0.01",
+                                    @autocomplete = "off",
+                                    @style = "display: none;",
+                                    @class = "form-control mb-4 border w-100 p-2 sign-form rounded-1",
+                                    @formnovalidate = "formnovalidate"
+                                }
+                                })
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                @Html.TextArea("newDescription", null, new { @class = "form-control mb-4 border w-100 p-2 sign-form rounded-1", @placeholder = "Ürün Açıklama", @autocomplete = "off" })
+                            </div>
+                        </div>
+                        <div class="row my-2">
+                            <div class="col">
+                                <label for="newCategory" class="form-label">Kategori: </label>
+                                @Html.DropDownList("newCategory", new SelectList(Model.ProductCategories, "Id", "KategoriIsim"), new { @class = "form-select sign-form" })
+                            </div>
+                        </div>
+
+
+                        <div class="modal-footer">
+                            <button id="productEditSubmitButton" type="submit" class="border-0 p-2 text-white bg-gradient w-25 boutique-button rounded-1">Güncelle</button>
+                            <button type="button" class="border-0 p-2 text-white bg-gradient boutique-button-dismiss w-25 rounded-1" data-bs-dismiss="modal">İptal</button>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" role="alert" id="newOrderNotif" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <img src="~/Content/img/logo.png" class="rounded me-2" alt="logo">
+            <strong class="me-auto">P&D Boutique</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Hello, world! This is a toast message.
+        </div>
+    </div>
+
+    @section scripts {
+
+        <script type="module">
+            import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
+            import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js';
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyCb6iGiDt9cJrCntYapA24dOgIGEWWxVoA",
+                authDomain: "pdbutik-d5391.firebaseapp.com",
+                projectId: "pdbutik-d5391",
+                storageBucket: "pdbutik-d5391.appspot.com",
+                messagingSenderId: "24897794233",
+                appId: "1:24897794233:web:543234cdd2fd866e8f2b68",
+                measurementId: "G-M3FJSHSEMB"
+            };
+
+            const app = initializeApp(firebaseConfig);
+
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                        .then(function (registration) {
+                            console.log('Service Worker registered with scope:', registration.scope);
+                        })
+                        .catch(function (err) {
+                            console.error('Service Worker registration failed:', err);
+                        });
+                });
+            }
+
+
+            const messaging = getMessaging(app);
+
+            Notification.requestPermission()
+                .then((permission) => {
+                    if (permission === 'granted') {
+                        console.log('Notification permission granted.');
+
+                        getToken(messaging, { vapidKey: 'BPODaZ_LZzGZQ8Xa8lVng4sgcCIrPb1gzBUSVFwuH2DeAIpFxuI9rXIkTgRIAhhX9gtSWlELiO6lUrzN7WaByMs' }).then((currentToken) => {
+                            if (currentToken) {
+                                fetch('@Url.Action("SaveDeviceToken", "Admin")', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        token: currentToken,
+                                    }),
+                                }).then(response => {
+                                    if (!response.ok) {
+                                        throw new Error("Network response was not ok");
+                                    }
+                                    return response.json();
+                                }).then(data => {
+                                    console.log("Success: ", data);
+                                }).catch(error => {
+                                    console.error("Error: ", error);
+                                });
+                            } else {
+                                console.log('No registration token available. Request permission to generate one.');
+                            }
+                        }).catch((err) => {
+                            console.error('An error occurred while retrieving the token.', err);
+                        });
+
+                        onMessage(messaging, (payload) => {
+                            console.log('Message received. ', payload);
+                        });
+                    } else {
+                        console.log('Unable to get permission to notify.');
+                    }
+                });
+        </script>
+
+        <script>
+
+            const productAddingSwiper = new Swiper('#productAddingSwiper', {
+                spaceBetween: 30,
+                loop: true,
+                lazy: true,
+                pagination: {
+                    el: ".swiper-pagination",
+                    clickable: true,
+                },
+            });
+            const productEditingSwiper = new Swiper('#productEditingSwiper', {
+                spaceBetween: 30,
+                loop: true,
+                lazy: true,
+                pagination: {
+                    el: ".swiper-pagination",
+                    clickable: true,
+                },
+            });
+            const productViewSwiper = new Swiper('#productViewSwiper', {
+                spaceBetween: 30,
+                loop: true,
+                lazy: true,
+                pagination: {
+                    el: ".swiper-pagination",
+                    clickable: true,
+                },
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+
+                var hash = window.location.hash;
+
+                if (hash) {
+                    $('.nav-pills a[href="' + hash + '"]').tab('show');
+                }
+
+                $.ajax({
+                    url: '@Url.Action("ListProductDetails", "Admin")',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { selectedProductId: $('#productsListBox option').first().val() },
+                    success: function (response) {
+                        productViewOldPrice.hidden = true;
+                        productViewSalePercentage.hidden = true;
+
+                        productViewName.textContent = response.selectedProductName;
+                        productViewInfo.textContent = response.selectedProductInfo;
+                        productViewPrice.textContent = response.selectedProductPrice;
+                        if (response.onSale) {
+                            productViewOldPrice.hidden = false;
+                            productViewOldPriceBefore.hidden = false;
+                            productViewSalePercentage.hidden = false;
+
+                            productViewOldPrice.textContent = response.selectedProductOldPrice;
+
+                            productViewSalePercentage.textContent = "%" + response.selectedProductSalePercentage.toString() + "-";
+                        } else {
+                            productViewOldPrice.hidden = true;
+                            productViewOldPriceBefore.hidden = true;
+                            productViewSalePercentage.hidden = true;
+                        }
+
+                        productViewSwiper.removeAllSlides();
+                        response.selectedProductPhotos.forEach((photo) => {
+                            var newImage = document.createElement("img");
+                            newImage.setAttribute("loading", "lazy");
+                            newImage.style.width = "261px";
+                            newImage.style.height = "400px";
+                            newImage.classList.add("img-fluid", "product-photo");
+                            newImage.src = photo;
+
+                            var newSlide = document.createElement("div");
+
+                            newSlide.classList.add("swiper-slide");
+                            newSlide.appendChild(newImage);
+
+                            productViewSwiper.appendSlide(newSlide);
+                        });
+                    },
+                    error: function (error) {
+                        console.error('Error:', error);
+                    }
+                });
+
+                const productCreateForm = document.getElementById('productCreateForm');
+                const productViewName = document.getElementById('productViewName');
+                const productViewPrice = document.getElementById('productViewPrice');
+                const previewProductName = document.getElementById('previewProductName');
+                const previewProductPrice = document.getElementById('previewProductPrice');
+                const previewProductOldPrice = document.getElementById('previewProductOldPrice');
+                const previewProductOldPriceBefore = document.getElementById('previewProductOldPriceBefore');
+                const oldPricePreviewInput = document.getElementById('inputProductOldPricePreview');
+                const inputProductNamePreview = document.getElementById('inputProductNamePreview');
+                const inputProductPricePreview = document.getElementById('inputProductPricePreview');
+                const inputUrlPhotoList = document.getElementById('inputUrlPhotoList');
+                const inputProductUrlPhotoPreview = document.getElementById('inputProductUrlPhotoPreview');
+                const productViewOldPrice = document.getElementById('productViewOldPrice');
+                const productViewOldPriceBefore = document.getElementById('productViewOldPriceBefore');
+                const productViewSalePercentage = document.getElementById('productViewSalePercentage');
+                const productViewInfo = document.getElementById('productViewInfo');
+                const productToRemove = document.getElementById('productToRemove');
+                const selectedProductIdConfirmationForm = document.getElementById('selectedProductId');
+                const categoryToRemove = document.getElementById('categoryToRemove');
+                const selectedCategoryIdConfirmationForm = document.getElementById('selectedCategoryIdConfirmationForm');
+                const categoryToEdit = document.getElementById('categoryToEdit');
+                const selectedCategoryIdEditForm = document.getElementById('selectedCategoryIdEditForm');
+
+                //Product editing vars
+                const productEditForm = document.getElementById('productEditForm');
+                const editPreviewProductName = document.getElementById('editPreviewProductName');
+                const editPreviewProductPrice = document.getElementById('editPreviewProductPrice');
+                const editPreviewProductOldPrice = document.getElementById('editPreviewProductOldPrice');
+                const editPreviewProductOldPriceBefore = document.getElementById('editPreviewProductOldPriceBefore');
+                const newProductOldPricePreview = document.getElementById('newProductOldPricePreview');
+                const newProductNamePreview = document.getElementById('newProductNamePreview');
+                const newProductPricePreview = document.getElementById('newProductPricePreview');
+                const newUrlPhotoList = document.getElementById('newUrlPhotoList');
+                const newProductUrlPhotoPreview = document.getElementById('newProductUrlPhotoPreview');
+                const productEditingSalePercentage = document.getElementById('productEditingSalePercentage');
+                const newProductOnSale = document.getElementById('newProductOnSale');
+                const newDescription = document.getElementById('newDescription');
+                const newCategory = document.getElementById('newCategory');
+                //Product editing vars
+
+                document.getElementById('productEditingButton').addEventListener('click', function() {
+                    $.ajax({
+                        url: '@Url.Action("ListProductDetails")',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: { selectedProductId: parseInt($('#productsListBox').val()) },
+                        success: function (response) {
+                            newProductNamePreview.value = response.selectedProductName;
+                            editPreviewProductName.textContent = response.selectedProductName;
+
+                            newProductPricePreview.value = response.selectedProductPrice;
+                            editPreviewProductPrice.textContent = response.selectedProductPrice;
+                            newDescription.value = response.selectedProductInfo;
+
+                            newCategory.value = response.selectedProductCategory;
+
+                            if (response.onSale) {
+                                newProductOnSale.checked = true;
+
+                                newProductOldPricePreview.value = response.selectedProductOldPrice;
+                                newProductOldPricePreview.style.display = "block";
+
+                                editPreviewProductOldPriceBefore.hidden = false;
+                                editPreviewProductOldPrice.textContent = response.selectedProductOldPrice;
+                                editPreviewProductOldPrice.hidden = false;
+                            } else {
+                                newProductOnSale.checked = false;
+
+                                newProductOldPricePreview.value = response.selectedProductOldPrice;
+                                newProductOldPricePreview.style.display = "none";
+
+                                editPreviewProductOldPriceBefore.hidden = true;
+                                editPreviewProductOldPrice.textContent = response.selectedProductOldPrice;
+                                editPreviewProductOldPrice.hidden = true;
+                            }
+                        },
+                        error: function (error) {
+                            console.error('Error: ', error);
+                        }
+                    });
+                });
+
+                function doesProductNameExist(productName) {
+                    return $.ajax({
+                        url: '@Url.Action("DoesProductNameExist")',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: { name: productName },
+                        global: false
+                    });
+                }
+
+                newProductNamePreview.addEventListener('input', function(e) {
+                    const name = e.target.value.trim();
+                    if (name) {
+                        doesProductNameExist(name).done(function (response) {
+                            if (response.productNameExists) {
+                                $('#productEditingNameMessage').text("Bu isim ile başka bir ürün zaten var!");
+                                $('#productEditSubmitButton').prop("disabled", true);
+                            } else {
+                                $('#productEditingNameMessage').text("");
+                                $('#productEditSubmitButton').prop("disabled", false);
+                            }
+                        }).fail(function (error) {
+                            console.error('Error: ', error);
+                        });
+                    } else {
+                        $('#productEditingNameMessage').text("");
+                        $('#productEditSubmitButton').prop("disabled", true);
+                    }
+                });
+
+                inputProductNamePreview.addEventListener('input', function(e) {
+                    const name = e.target.value.trim();
+                    if (name) {
+                        doesProductNameExist(name).done(function (response) {
+                            if (response.productNameExists) {
+                                $('#productCreatingNameMessage').text("Bu isim ile başka bir ürün zaten var!");
+                                $('#productCreateSubmitButton').prop("disabled", true);
+                            } else {
+                                $('#productCreatingNameMessage').text("");
+                                $('#productCreateSubmitButton').prop("disabled", false);
+                            }
+                        }).fail(function (error) {
+                            console.error('Error: ', error);
+                        });
+                    } else {
+                        $('#productCreatingNameMessage').text("");
+                        $('#productCreateSubmitButton').prop("disabled", true);
+                    }
+                });
+
+
+                document.getElementById('addImgUrlButton').addEventListener('click', function() {
+                    const inputProductUrlPhotoPreviewValue = inputProductUrlPhotoPreview.value;
+                    inputProductUrlPhotoPreview.value = "";
+
+                    inputUrlPhotoList.value += inputProductUrlPhotoPreviewValue + "\n";
+
+                    var newImage = document.createElement("img");
+                    newImage.style.width = "261px";
+                    newImage.style.height = "400px";
+                    newImage.classList.add("img-fluid", "product-photo");
+                    newImage.src = inputProductUrlPhotoPreviewValue;
+
+                    var newSlide = document.createElement("div");
+
+                    newSlide.classList.add("swiper-slide");
+                    newSlide.appendChild(newImage);
+
+                    productAddingSwiper.appendSlide(newSlide);
+                });
+                document.getElementById('addNewImgUrlButton').addEventListener('click', function() {
+                    const inputProductUrlPhotoPreviewValue = newProductUrlPhotoPreview.value;
+                    newProductUrlPhotoPreview.value = "";
+
+                    newUrlPhotoList.value += inputProductUrlPhotoPreviewValue + "\n";
+
+                    var newImage = document.createElement("img");
+                    newImage.style.width = "261px";
+                    newImage.style.height = "400px";
+                    newImage.classList.add("img-fluid", "product-photo");
+                    newImage.src = inputProductUrlPhotoPreviewValue;
+
+                    var newSlide = document.createElement("div");
+
+                    newSlide.classList.add("swiper-slide");
+                    newSlide.appendChild(newImage);
+
+                    productEditingSwiper.appendSlide(newSlide);
+                });
+
+                document.getElementById("clearFilesButton").addEventListener("click", function() {
+                    const fileInput = document.getElementById('inputProductPhotoPreview');
+
+                    let newFileInput = document.createElement('input');
+                    newFileInput.id = fileInput.id;
+                    newFileInput.name = fileInput.name;
+                    newFileInput.type = fileInput.type;
+                    newFileInput.classList = fileInput.classList;
+                    newFileInput.accept = fileInput.accept;
+                    newFileInput.multiple = fileInput.multiple;
+                    newFileInput.formNoValidate = fileInput.formNoValidate;
+
+                    inputUrlPhotoList.value = null;
+                    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+                    productAddingSwiper.removeAllSlides()
+                });
+                document.getElementById('clearNewFilesButton').addEventListener('click', function() {
+                    const fileInput = document.getElementById('newProductPhotoPreview');
+
+                    let newFileInput = document.createElement('input');
+                    newFileInput.id = fileInput.id;
+                    newFileInput.name = fileInput.name;
+                    newFileInput.type = fileInput.type;
+                    newFileInput.classList = fileInput.classList;
+                    newFileInput.accept = fileInput.accept;
+                    newFileInput.multiple = fileInput.multiple;
+                    newFileInput.formNoValidate = fileInput.formNoValidate;
+
+                    newUrlPhotoList.value = null;
+                    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+                    productEditingSwiper.removeAllSlides()
+                });
+
+                document.getElementById("inputProductPhotoPreview").addEventListener("change", function(event) {
+
+                    var files = event.target.files;
+
+                    for (var i = 0; i < files.length; i++) {
+                        var reader = new FileReader();
+
+                        reader.onload = (function (file) {
+                            return function (e) {
+
+                                var newImage = document.createElement("img");
+                                newImage.style.width = "261px";
+                                newImage.style.height = "400px";
+                                newImage.classList.add("img-fluid", "product-photo");
+                                newImage.src = e.target.result;
+
+                                var newSlide = document.createElement("div");
+
+                                newSlide.classList.add("swiper-slide");
+                                newSlide.appendChild(newImage);
+
+                                productAddingSwiper.appendSlide(newSlide);
+                            };
+                        })(files[i]);
+
+                        reader.readAsDataURL(files[i]);
+                    }
+                });
+                document.getElementById('newProductPhotoPreview').addEventListener('change', function(event) {
+                    var files = event.target.files;
+
+                    for (var i = 0; i < files.length; i++) {
+                        var reader = new FileReader();
+
+                        reader.onload = (function (file) {
+                            return function (e) {
+
+                                var newImage = document.createElement("img");
+                                newImage.style.width = "261px";
+                                newImage.style.height = "400px";
+                                newImage.classList.add("img-fluid", "product-photo");
+                                newImage.src = e.target.result;
+
+                                var newSlide = document.createElement("div");
+
+                                newSlide.classList.add("swiper-slide");
+                                newSlide.appendChild(newImage);
+
+                                productEditingSwiper.appendSlide(newSlide);
+                            };
+                        })(files[i]);
+
+                        reader.readAsDataURL(files[i]);
+                    }
+                });
+                document.getElementById('inputProductPhotoPreview').addEventListener('click', function() {
+                    swiper.removeAllSlides();
+                });
+                document.getElementById('newProductPhotoPreview').addEventListener('click', function() {
+                    swiper.removeAllSlides();
+                });
+
+                inputProductNamePreview.addEventListener('input', function() {
+                    previewProductName.textContent = inputProductNamePreview.value;
+                });
+                newProductNamePreview.addEventListener('input', function() {
+                    editPreviewProductName.textContent = newProductNamePreview.value;
+                });
+                inputProductPricePreview.addEventListener('input', function() {
+                    previewProductPrice.textContent = inputProductPricePreview.value;
+                });
+                newProductPricePreview.addEventListener('input', function() {
+                    editPreviewProductPrice.textContent = newProductPricePreview.value;
+                });
+
+                checkProductCreateValidity();
+                checkProductEditValidity();
+
+                inputProductNamePreview.addEventListener('input', function() {
+                    checkProductCreateValidity();
+                });
+
+                inputProductPricePreview.addEventListener('input', function() {
+                    checkProductCreateValidity();
+                });
+
+                function checkProductCreateValidity() {
+                    if (inputProductNamePreview.checkValidity() && inputProductPricePreview.checkValidity()) {
+                        $('#productCreateSubmitButton').prop('disabled', false);
+                    } else {
+                        $('#productCreateSubmitButton').prop('disabled', true);
+                    }
+                }
+
+                newProductNamePreview.addEventListener('input', function() {
+                    checkProductEditValidity();
+                });
+
+                newProductPricePreview.addEventListener('input', function() {
+                    checkProductEditValidity();
+                });
+
+                function checkProductEditValidity() {
+                    if (newProductNamePreview.checkValidity() && newProductPricePreview.checkValidity()) {
+                        $('#productEditSubmitButton').prop('disabled', false);
+                    } else {
+                        $('#productEditSubmitButton').prop('disabled', true);
+                    }
+                }
+
+                document.getElementById('inputProductOnSale').addEventListener('change', function() {
+                    if (this.checked) {
+                        oldPricePreviewInput.style.display = "block";
+                        previewProductOldPriceBefore.hidden = false;
+                        previewProductOldPrice.hidden = false;
+                    } else {
+                        oldPricePreviewInput.style.display = "none";
+                        previewProductOldPriceBefore.hidden = true;
+                        previewProductOldPrice.hidden = true;
+                    }
+                });
+                newProductOnSale.addEventListener('change', function() {
+                    if (this.checked) {
+                        newProductOldPricePreview.style.display = "block";
+                        editPreviewProductOldPriceBefore.hidden = false;
+                        editPreviewProductOldPrice.hidden = false;
+                    } else {
+                        newProductOldPricePreview.style.display = "none";
+                        editPreviewProductOldPriceBefore.hidden = true;
+                        editPreviewProductOldPrice.hidden = true;
+                    }
+                });
+                oldPricePreviewInput.addEventListener('input', function() {
+                    previewProductOldPrice.textContent = this.value;
+                });
+                newProductOldPricePreview.addEventListener('input', function() {
+                    editPreviewProductOldPrice.textContent = this.value;
+                });
+
+                document.getElementById('productDeletingButton').addEventListener('click', function () {
+                    productToRemove.textContent = $('#productsListBox').select2('data')[0].text;
+                    selectedProductIdConfirmationForm.value = $('#productsListBox').select2('data')[0].id;
+                });
+
+                document.getElementById('editCategoryButton').addEventListener('click', function () {
+                    categoryToEdit.textContent = $('#categoriesListBox').select2('data')[0].text;
+                    selectedCategoryIdEditForm.value = $('#categoriesListBox').select2('data')[0].id;
+                });
+
+                document.getElementById('removeCategoryButton').addEventListener('click', function () {
+                    categoryToRemove.textContent = $('#categoriesListBox').select2('data')[0].text;
+                    selectedCategoryIdConfirmationForm.value = $('#categoriesListBox').select2('data')[0].id;
+                });
+
+                $('#productsListBox').on('select2:select', function(e) {
+                    $.ajax({
+                        url: '@Url.Action("ListProductDetails", "Admin")',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: { selectedProductId: parseInt(e.params.data.id) },
+                        success: function (response) {
+                            productViewOldPrice.hidden = true;
+                            productViewSalePercentage.hidden = true;
+
+                            productViewName.textContent = response.selectedProductName;
+                            productViewPrice.textContent = response.selectedProductPrice;
+                            if (response.onSale) {
+                                productViewOldPrice.hidden = false;
+                                productViewOldPriceBefore.hidden = false;
+                                productViewSalePercentage.hidden = false;
+
+                                productViewOldPrice.textContent = response.selectedProductOldPrice;
+
+                                productViewSalePercentage.textContent = "%" + response.selectedProductSalePercentage.toString() + "-";
+                            }
+                            else {
+                                productViewOldPrice.hidden = true;
+                                productViewOldPriceBefore.hidden = true;
+                                productViewSalePercentage.hidden = true;
+                            }
+
+                            productViewSwiper.removeAllSlides();
+                            response.selectedProductPhotos.forEach((photo) => {
+                                var newImage = document.createElement("img");
+                                newImage.setAttribute("loading", "lazy");
+                                newImage.style.width = "261px";
+                                newImage.style.height = "400px";
+                                newImage.classList.add("img-fluid", "product-photo");
+                                newImage.src = photo;
+
+                                var newSlide = document.createElement("div");
+
+                                newSlide.classList.add("swiper-slide");
+                                newSlide.appendChild(newImage);
+
+                                productViewSwiper.appendSlide(newSlide);
+                            });
+                        },
+                        error: function (error) {
+                            console.error('Error:', error);
+                        }
+                    });
+                });
+            });
+
+            const selectedProductId = parseInt($('#productsListBox').val());
+            $("[name='selectedProductId']").val(selectedProductId);
+
+            $('#productsListBox').on('select2:select', function (e) {
+                const selectedProductId = parseInt(e.params.data.id);
+                $("[name='selectedProductId']").val(selectedProductId);
+            });
+
+            function editModal(button) {
+                if (button.value === "cbc") {
+                        $.get('@Url.Action("GetBannerContentForm", "Admin")', function(data) {
+                            $('#modalBody').html(data);
+                        });
+
+                    const firstInput = document.getElementById("bannerTitleEditor");
+                    const secondInput = document.getElementById("bannerAltTitleEditor");
+
+                    firstInput.addEventListener("keydown", function () {
+                        if (firstInput.value != null && firstInput.value != "") {
+                            secondInput.removeAttribute("required");
+                        } else {
+                            secondInput.setAttribute("required", "required");
+                        }
+                    });
+                    secondInput.addEventListener("keydown", function () {
+                        if (secondInput !== null && secondInput !== "") {
+                            firstInput.removeAttribute("required");
+                        } else {
+                            firstInput.setAttribute("required", "required");
+                        }
+                    });
+                }
+                else if (button.value === "cfc") {
+                    $.get('@Url.Action("GetFooterContentForm", "Admin")', function (data) {
+                        $('#modalBody').html(data);
+                    });
+                }
+            }
+        </script>
+
+        @if (errorOcurred)
+        {
+            <script>
+                $(document).ready(function () {
+                    $('#resultModal').modal('show');
+                });
+            </script>
+        }
+    }
+</main>
+

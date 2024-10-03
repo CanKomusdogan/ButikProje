@@ -1,0 +1,27 @@
+﻿@using ButikProje.Models
+@model DbInterface
+@{
+    ViewBag.Title = "Hemen Satın Al";
+}
+
+<h2>Purchase</h2>
+
+@Html.Raw(ViewBag.Iyzico)
+
+<div class="row">
+
+    <div class="col col-md-12">
+        <div class="card">
+            <div class="card-header">
+                Ödeme Yap
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col">
+                        <div id="iyzipay-checkout-form" class="responsive"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

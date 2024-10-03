@@ -1,0 +1,196 @@
+﻿@using ButikProje.Models
+@using System.Data.Entity
+@model DbInterface
+@{
+    ViewBag.Title = "Siparişler";
+
+    int uid = ViewBag.UID ?? Convert.ToInt32(User.Identity.Name);
+
+    bool redirectedFromPayment = ViewBag.PaymentSucceeded != null;
+    string resultNotifyClass = string.Empty;
+    string paymentResult = string.Empty;
+    if (redirectedFromPayment)
+    {
+        if ((bool)ViewBag.PaymentSucceeded)
+        {
+            resultNotifyClass = "bg-success";
+            paymentResult = "Ödeme başarılı!";
+        }
+        else
+        {
+            resultNotifyClass = "bg-danger";
+            paymentResult = "Ödeme başarısız.";
+        }
+    }
+
+    bool errOccured = !string.IsNullOrWhiteSpace(ViewBag.ErrMsg);
+}
+
+@if (redirectedFromPayment)
+{
+    @*<div class="row m-3 p-3 border text-white rounded @resultNotifyClass">
+            <div class="col text-center">
+                <h5 class="mb-0">@paymentResult</h5>
+            </div>
+        </div>*@
+
+    <div class="modal" id="paymentResultModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card border-0">
+                        <div class="card-body">
+                            <div class="@resultNotifyClass d-flex align-items-center justify-content-center position-relative" style="border-radius: 200px; height: 200px; width: 200px; margin: 0 auto;">
+                                <i class="fa-solid @((bool)ViewBag.PaymentSucceeded ? "fa-check" : "fa-x") checkmark position-absolute text-white" style="font-size: 100px"></i>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center">
+                            <h5 class="mb-0">@paymentResult</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tamam</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row">
+    <div class="col">
+        <h2>Siparişler</h2>
+    </div>
+</div>
+
+<hr />
+
+<div>
+    @if (Model.Orders != null && Model.Orders.Any())
+    {
+        foreach (TblSiparisler order in Model.Orders.Where(x => x.SiparisKullaniciId == uid))
+        {
+            <div class="row row-cols-1 mb-3 border border-2 rounded p-3 m-1">
+                <div class="col-auto my-2">
+                    <h5>Sipariş</h5>
+                </div>
+                <hr />
+                <div class="col">
+                    <div class="row mb-3">
+                        @foreach (IGrouping<int, TblSiparisItemler> orderItem in order.TblSiparisItemlers.GroupBy(x => x.UrunId))
+                        {
+                            using (masterEntities db = new masterEntities())
+                            {
+                                int productId = orderItem.FirstOrDefault().UrunId;
+                                TblUrunTanim product = db.TblUrunTanims.Include(x => x.TblUrunFotoes).FirstOrDefault(x => x.UrunId == productId);
+                                string productLink = product != null ? Url.Action("Product", "Home", new { name = product.UrunIsim }) : "#";
+                                <a style="transform: scale(85%)" href="@productLink" class="col-auto me-3 text-center p-2 border border-1 rounded text-decoration-none text-black">
+                                    @{
+                                        int itemCount = order.TblSiparisItemlers.Where(x => x.UrunId == orderItem.FirstOrDefault().UrunId).Count();
+
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary text-white">
+                                            @itemCount
+                                        </span>
+
+                                        if (product != null)
+                                        {
+                                            TblUrunFoto productPhoto = product.TblUrunFotoes.OrderByDescending(x => x.FotoId).FirstOrDefault();
+                                            string photo = productPhoto.UrunFoto;
+                                            if (productPhoto != null && !string.IsNullOrWhiteSpace(photo))
+                                            {
+                                                <img class="img-fluid rounded-1" loading="lazy" width="70" height="105" src="@photo" />
+                                            }
+
+                                            <p>@product.UrunIsim</p>
+                                            <p>₺@product.UrunFiyat</p>
+                                        }
+                                        else
+                                        {
+                                            <p>Ürün bulunamadı</p>
+                                        }
+                                    }
+                                </a>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="row row-cols-1">
+                    <div class="col">
+                        <p>Sipariş Tarihi: @order.SiparisTarih</p>
+                    </div>
+                    <div class="col">
+                        @{
+                            using (masterEntities db = new masterEntities())
+                            {
+                                IEnumerable<int> orderItemsIds = order.TblSiparisItemlers.Select(i => i.UrunId);
+
+                                List<TblUrunTanim> orderedProducts = db.TblUrunTanims.Where(p => orderItemsIds.Contains(p.UrunId)).ToList();
+
+                                if (orderedProducts.Count > 0)
+                                {
+                                    <p>Toplam Fiyat: @orderedProducts.Sum(x => x.UrunFiyat) TL</p>
+                                }
+                            }
+                        }
+                    </div>
+                </div>
+
+            </div>
+        }
+    }
+    else
+    {
+        <div class="row">
+            <div class="col">
+                <span>Sipariş listenizde herhangi bir sipariş bulunmamakta.</span>
+            </div>
+        </div>
+    }
+
+</div>
+
+@if (errOccured)
+{
+    <div class="modal" id="errMsgModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <span class="text-danger">
+                        @ViewBag.ErrMsg
+                    </span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tamam</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section scripts {
+    @if (redirectedFromPayment)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                $('#paymentResultModal').modal('show');
+            });
+        </script>
+    }
+
+    @if (errOccured)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                $('#errMsgModal').modal('show');
+            });
+        </script>
+    }
+
+}

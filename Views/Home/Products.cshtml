@@ -1,0 +1,153 @@
+﻿@model List<DbProduct>
+@using ButikProje.Models
+@using ButikProje.Commons;
+@{
+    if (ViewBag.CurrentFilter == null)
+    {
+        ViewBag.CurrentFilter = DbCommons.Filters.Default;
+    }
+}
+
+@if (ViewBag.CurrentAction != "Search" && ViewBag.CurrentAction != "Category")
+{
+    <div id="currentFilter" class="row pt-5 d-inline">
+        <div class="align-content-center justify-content-center d-flex">
+            <h5>@ViewBag.TranslatedFilter</h5>
+        </div>
+    </div>
+}
+
+@if (ViewBag.CurrentAction == "Category")
+{
+    <div class="row pt-5 d-inline">
+        <div class="align-content-center justify-content-center d-flex">
+            <h5></h5>
+        </div>
+    </div>
+}
+
+
+@if (Model.Count > 0)
+{
+    <div class="row d-flex flex-row-reverse">
+        <div class="col-auto">
+            <a href="@Url.Action(ViewBag.CurrentAction, new { q = ViewBag.Query, filters = DbCommons.Filters.IncreasingPrice,
+                    page = ViewBag.CurrentPage ?? 1 })#currentFilter"
+               class="btn text-decoration-none text-black">
+                <i class="fa-solid fa-arrow-up me-1"></i> Artan fiyat
+            </a>
+        </div>
+        <div class="col-auto">
+            <a href="@Url.Action(ViewBag.CurrentAction, new { q = ViewBag.Query, filters = DbCommons.Filters.DecreasingPrice,
+                    page = ViewBag.CurrentPage ?? 1 })#currentFilter"
+               class="btn text-decoration-none text-black"><i class="fa-solid fa-arrow-down me-1"></i> Azalan fiyat</a>
+        </div>
+    </div>
+}
+
+<div style="font-family: Montserrat" class="row pt-5 gx-4 gx-lg-5 row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 justify-content-center">
+    @foreach (DbProduct product in Model)
+    {
+        <a class="text-decoration-none text-black" href="@Url.Action("Product", "Home", new { name = product.Name })">
+            <div class="col mb-5">
+                <div class="card product-card h-100">
+                    <!--Product image-->
+                    @if (product.OnSale)
+                    {
+                        <span style="z-index: 999" class="position-absolute badge bg-danger translate-middle start-100 top-0">&percnt;@product.SalePercentage.GetValueOrDefault().ToString("0")-</span>
+                    }
+                    <div class="card-img-top">
+
+                        <div style="height: 400px" class="swiper swiper-all">
+                            <div class="swiper-wrapper">
+                                @foreach (DbProductPhoto productPhoto in product.Photos.OrderByDescending(x => x.ID))
+                                {
+                                    <div class="swiper-slide">
+                                        <img loading="lazy" style="width: 261px; height: 400px" class="img-fluid product-photo" src="@Url.Content(productPhoto.PhotoContent)" />
+                                        <div class="swiper-lazy-preloader swiper-lazy-preloader-white"></div>
+                                    </div>
+                                }
+                            </div>
+                            <div class="swiper-pagination all-items-pagination">
+                            </div>
+                        </div>
+                    </div>
+                    <!--Product details-->
+                    <div class="card-body p-4">
+                        <div class="text-center">
+                            <!--Product name-->
+                            <h5 class="fw-bolder">@product.Name</h5>
+                            <!--Product price-->
+                            @if (product.OnSale)
+                            {
+                                @*The html codes are for the turkish lira sign*@
+                                <span class="text-muted text-decoration-line-through opacity-50 me-2">&#8378;@product.OldPrice</span> <span>&#8378;@product.Price</span>
+                            }
+                            else
+                            {
+                                <span>&#8378;@product.Price</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    }
+</div>
+
+@if (Model.Any() && Model != null && ViewBag.CurrentPage != null && ViewBag.TotalPages != null && ViewBag.CurrentAction != null)
+{
+    <nav class="d-flex justify-content-center align-content-center">
+        <ul class="pagination">
+            @if (ViewBag.CurrentPage > 1)
+            {
+                <li class="page-item">
+                    @if (ViewBag.CurrentAction == "Search")
+                    {
+                        <a class="page-link text-dark" href="@Url.Action(ViewBag.CurrentAction, new { q = ViewBag.Query, filters = ViewBag.CurrentFilter, page = ViewBag.CurrentPage-1 })" aria-label="Önceki Sayfa">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="page-link text-dark" href="@Url.Action(ViewBag.CurrentAction, new { filters = ViewBag.CurrentFilter, page = ViewBag.CurrentPage-1 })" aria-label="Önceki Sayfa">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    }
+                </li>
+            }
+
+            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+            {
+                <li class="page-item">
+                    @if (ViewBag.CurrentAction == "Search")
+                    {
+                        <a class="page-link @(i == ViewBag.CurrentPage ? "bg-dark text-white" : "text-dark")" href="@Url.Action(ViewBag.CurrentAction, new { q = ViewBag.Query, filters = ViewBag.CurrentFilter, page = i })">@i</a>
+                    }
+                    else
+                    {
+                        <a class="page-link @(i == ViewBag.CurrentPage ? "bg-dark text-white" : "text-dark")" href="@Url.Action(ViewBag.CurrentAction, new { filters = ViewBag.CurrentFilter, page = i })">@i</a>
+                    }
+                </li>
+            }
+
+            @if (ViewBag.CurrentPage != ViewBag.TotalPages)
+            {
+                <li class="page-item">
+                    @if (ViewBag.CurrentAction == "Search")
+                    {
+                        <a class="page-link text-dark" href="@Url.Action(ViewBag.CurrentAction, new { q = ViewBag.Query, filters = ViewBag.CurrentFilter, page = ViewBag.CurrentPage+1 })" aria-label="Sonraki Sayfa">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="page-link text-dark" href="@Url.Action(ViewBag.CurrentAction, new { filters = ViewBag.CurrentFilter, page = ViewBag.CurrentPage+1 })" aria-label="Sonraki Sayfa">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    }
+                </li>
+            }
+        </ul>
+    </nav>
+}

@@ -1,0 +1,9 @@
+﻿@model DbInterface
+@using ButikProje.Models
+@{
+    ViewBag.Title = "Arama";
+}
+
+<h5>@ViewBag.Result</h5>
+
+@Html.Partial("Products", Model.Products)

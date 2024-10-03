@@ -1,0 +1,439 @@
+﻿@using ButikProje.Models
+@model DbInterface
+@{
+    ViewBag.Title = "Ana Sayfa";
+
+    bool redirectedFromPayment = ViewBag.PaymentSucceeded != null;
+    string resultNotifyClass = string.Empty;
+    string paymentResult = string.Empty;
+    if (redirectedFromPayment)
+    {
+        if ((bool)ViewBag.PaymentSucceeded)
+        {
+            resultNotifyClass = "bg-success";
+            paymentResult = "Ödeme başarılı!";
+        }
+        else
+        {
+            resultNotifyClass = "bg-danger";
+            paymentResult = "Ödeme başarısız.";
+        }
+    }
+}
+
+<header class="py-5" style="background-color: #ecebe5;zoom: 75%; border-radius: 16px;">
+    <div class="container px-4 px-lg-5 my-5">
+        <div class="text-center">
+            @if (Model != null && !string.IsNullOrWhiteSpace(Model.BannerTitle))
+            {
+                <h1 class="display-3 fw-bolder"><i style="color: rgb(212, 186, 91); font-family: 'Cormorant Infant'">@Model.BannerTitle</i></h1>
+            }
+            else
+            {
+                <h1 class="display-3 fw-bolder"><i style="color: rgb(212, 186, 91); font-family: 'Cormorant Infant'">P&amp;D Boutique</i></h1>
+            }
+
+            @if (Model != null && !string.IsNullOrWhiteSpace(Model.BannerTitle))
+            {
+                <h6 class="lead fw-normal text-black-50 mb-0">@Model.BannerAltTitle</h6>
+            }
+            else
+            {
+                <h6 class="lead fw-normal text-black-50 mb-0">Moda'nın adresi'</h6>
+            }
+        </div>
+    </div>
+</header>
+
+@if (redirectedFromPayment)
+{
+    @*<div class="row m-3 p-3 border text-white rounded @resultNotifyClass">
+            <div class="col text-center">
+                <h5 class="mb-0">@paymentResult</h5>
+            </div>
+        </div>*@
+
+    <div class="modal" id="paymentResultModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card border-0">
+                        <div class="card-body">
+                            <div class="@resultNotifyClass d-flex align-items-center justify-content-center position-relative" style="border-radius: 200px; height: 200px; width: 200px; margin: 0 auto;">
+                                <i class="fa-solid @((bool)ViewBag.PaymentSucceeded ? "fa-check" : "fa-x") checkmark position-absolute text-white" style="font-size: 100px"></i>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center">
+                            <h5 class="mb-0">@paymentResult</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tamam</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<section class="py-5">
+    <div class="container-sm px-4 px-lg-5 mt-5">
+        <hr />
+        @* test <div class="row pt-5 gx-4 gx-lg-5 row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 justify-content-center">*@
+
+        @Html.Partial("Products", Model.Products)
+
+
+        @*test <div class="col mb-5">
+                    <div class="card h-100">
+                        <div class="card-img-top">
+                            <div style="height: 400px" class="swiper swiper-all">
+
+                                <div class="swiper-wrapper">
+                                    <div class="swiper-slide">
+                                        <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekkemer-ketayli-pileli-etek-siyah-5-4063.jpg" />
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekkemer-ketayli-pileli-etek-siyah-76bb33.jpg" />
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekkemer-ketayli-pileli-etek-siyah-e-5fc1.jpg" />
+                                    </div>
+                                    ...
+                                </div>
+                                <div class="swiper-pagination all-items-pagination">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="text-center">
+                                 Product name
+                                <h5 class="fw-bolder cursor-text">Örnek</h5>
+                                 Product price
+                                <span class="cursor-text">$40.00 - $80.00</span>
+                            </div>
+                        </div>
+                         Product actions
+                        <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                            <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Seçenekleri gör</a></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col mb-5">
+                    <div class="card h-100">
+                         Product image
+                        <div class="card-img-top">
+                            <div style="height: 400px" class="swiper swiper-all">
+                                <div class="swiper-wrapper">
+                                    <div class="swiper-slide">
+                                        <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekkemer-ketayli-pileli-etek-gri-453f7e.jpg" />
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekkemer-ketayli-pileli-etek-gri-7e6f-4.jpg" />
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekkemer-ketayli-pileli-etek-gri--ac87-.jpg" />
+                                    </div>
+                                    ...
+                                </div>
+                                <div class="swiper-pagination all-items-pagination">
+                                </div>
+                            </div>
+                        </div>
+                         Product details
+                        <div class="card-body p-4">
+                            <div class="text-center">
+                                 Product name
+                                <h5 class="fw-bolder cursor-text">Örnek</h5>
+                                 Product price
+                                <span class="cursor-text">$40.00 - $80.00</span>
+                            </div>
+                        </div>
+                         Product actions
+                        <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">!
+                            <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Seçenekleri gör</a></div>
+                        </div>
+                    </div>
+            <div class="col mb-5">
+                <div class="card h-100 card-sale">
+                    Product image
+                    <div class="card-img-top">
+                        <div style="height: 400px" class="swiper swiper-all">
+                            <div class="swiper-wrapper">
+
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-93-247.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe--de34a.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-a6e1-4.jpg" />
+                                </div>
+                                ...
+                            </div>
+                            <div class="swiper-pagination all-items-pagination">
+                            </div>
+                        </div>
+                    </div>
+                    Product details
+                    <div class="card-body p-4">
+                        <div class="text-center">
+                            Product name
+                            <h5 class="fw-bolder cursor-text">Özel yer tutucu</h5>
+                            Product price
+                            <span class="text-muted cursor-text text-decoration-line-through">$20.00</span>
+                            <span class="cursor-text">$18.00</span>
+                        </div>
+                    </div>
+                    Product actions
+                    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                        <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Sepete ekle</a></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mb-5">
+                <div class="card card-sale h-100">
+                    Sale badge
+                    Product image
+                    <div class="card-img-top">
+                        <div style="height: 400px" class="swiper swiper-all">
+
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-93-247.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe--de34a.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-a6e1-4.jpg" />
+                                </div>
+                                ...
+                            </div>
+                            <div class="swiper-pagination all-items-pagination">
+                            </div>
+                        </div>
+                    </div>
+                    Product details
+                    <div class="card-body p-4">
+                        <div class="text-center">
+                            Product name
+                            <h5 class="fw-bolder cursor-text">İndirimli yer tutucu</h5>
+                            Product price
+                            <span class="text-muted cursor-text text-decoration-line-through">$50.00</span>
+                            <span class="cursor-text">$25.00</span>
+                        </div>
+                    </div>
+                    Product actions
+                    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                        <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Sepete ekle</a></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mb-5">
+                <div class="card h-100">
+                    Product image
+                    <div class="card-img-top">
+                        <div style="height: 400px" class="swiper swiper-all">
+
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-93-247.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe--de34a.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-a6e1-4.jpg" />
+                                </div>
+                                ...
+                            </div>
+                            <div class="swiper-pagination all-items-pagination">
+                            </div>
+                        </div>
+                    </div>
+                    Product details
+                    <div class="card-body p-4">
+                        <div class="text-center">
+                            Product name
+                            <h5 class="fw-bolder cursor-text">Popüler yer tutucu</h5>
+                            Product price
+                            <span class="cursor-text">$40.00</span>
+                        </div>
+                    </div>
+                    Product actions
+                    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                        <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Sepete ekle</a></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mb-5">
+                <div class="card card-sale h-100">
+                    Sale badge
+                    Product image
+                    <div class="card-img-top">
+                        <div style="height: 400px" class="swiper swiper-all">
+
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-93-247.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe--de34a.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-a6e1-4.jpg" />
+                                </div>
+                                ...
+                            </div>
+                            <div class="swiper-pagination all-items-pagination">
+                            </div>
+                        </div>
+                    </div>
+                    Product details
+                    <div class="card-body p-4">
+                        <div class="text-center">
+                            Product name
+                            <h5 class="fw-bolder">İndirimli yer tutucu</h5>
+                            Product price
+                            <span class="text-muted text-decoration-line-through cursor-text">$50.00</span>
+                            <span class="cursor-text">$25.00</span>
+                        </div>
+                    </div>
+                    Product actions
+                    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                        <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Sepete ekle</a></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mb-5">
+                <div class="card h-100">
+                    Product image
+                    <div class="card-img-top">
+                        <div style="height: 400px" class="swiper swiper-all">
+
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-93-247.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe--de34a.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-a6e1-4.jpg" />
+                                </div>
+                                ...
+                            </div>
+                            <div class="swiper-pagination all-items-pagination">
+                            </div>
+                        </div>
+                    </div>
+                    Product details
+                    <div class="card-body p-4">
+                        <div class="text-center">
+                            Product name
+                            <h5 class="fw-bolder cursor-text">Yer Tutucu</h5>
+                            Product price
+                            <span class="cursor-text">$120.00 - $280.00</span>
+                        </div>
+                    </div>
+                    Product actions
+                    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                        <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Seçenekleri gör</a></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mb-5">
+                <div class="card card-sale h-100">
+                    Sale badge
+                    Product image
+                    <div class="card-img-top">
+                        <div style="height: 400px" class="swiper swiper-all">
+
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-93-247.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe--de34a.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-a6e1-4.jpg" />
+                                </div>
+                                ...
+                            </div>
+                            <div class="swiper-pagination all-items-pagination">
+                            </div>
+                        </div>
+                    </div>
+                    Product details
+                    <div class="card-body p-4">
+                        <div class="text-center">
+                            Product name
+                            <h5 class="fw-bolder cursor-text">Özel yer tutucu</h5>
+                            Product price
+                            <span class="text-muted text-decoration-line-through">$20.00</span>
+                            <span class="cursor-text">$18.00</span>
+                        </div>
+                    </div>
+                    Product actions
+                    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                        <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Sepete ekle</a></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mb-5">
+                <div class="card h-100">
+                    Product image
+                    <div class="card-img-top">
+                        <div style="height: 400px" class="swiper swiper-all">
+
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-93-247.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe--de34a.jpg" />
+                                </div>
+                                <div class="swiper-slide">
+                                    <img style="width: 261px; height: 400px" class="img-fluid" src="https://static.ticimax.cloud/cdn-cgi/image/width=630,quality=90,format=webp/30743/uploads/urunresimleri/buyuk/etekgold-dugme-tuvit-sort-etek-pembe-a6e1-4.jpg" />
+                                </div>
+                                ...
+                            </div>
+                            <div class="swiper-pagination all-items-pagination">
+                            </div>
+                        </div>
+                    </div>
+                    Product details
+                    <div class="card-body p-4">
+                        <div class="text-center">
+                            Product name
+                            <h5 class="fw-bolder cursor-text">Popüler yer tutucu</h5>
+                            Product price
+                            <span class="cursor-text">$40.00</span>
+                        </div>
+                    </div>
+                    Product actions
+                    <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+                        <div class="text-center"><a class="btn btn-outline-dark mt-auto" href="#">Sepete ekle</a></div>
+                    </div>
+                </div>
+            </div>*@
+    </div>
+</section>
+
+@section scripts {
+    @if (redirectedFromPayment)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                $('#paymentResultModal').modal('show');
+            });
+        </script>
+    }
+}

@@ -1,0 +1,114 @@
+﻿@model DbInterface
+@using ButikProje.Models
+@{
+    ViewBag.Title = Model.Products.SingleOrDefault().Name;
+    DbProduct product = Model.Products.SingleOrDefault();
+}
+
+<div style="font-family: Montserrat !important;" class="container">
+    <div class="row">
+        <form method="get" action="@Url.Action("BuyNow", "Home")">
+            <div class="col p-3 rounded-1">
+                <div style="width: 400px !important" class="swiper flex-column-reverse swiper-product">
+                    <div class="swiper-wrapper">
+                        @foreach (DbProductPhoto productPhoto in product.Photos.OrderByDescending(x => x.ID))
+                        {
+                            <div class="swiper-slide">
+                                <img loading="lazy" class="img-fluid" src="@Url.Content(productPhoto.PhotoContent)" />
+                                <div class="swiper-lazy-preloader swiper-lazy-preloader-white"></div>
+                            </div>
+                        }
+                    </div>
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                </div>
+            </div>
+            <div class="col p-3 rounded-1">
+                <div class="row">
+                    <div class="col">
+                        <h2 style="font-weight: 300">@product.Name</h2>
+                    </div>
+                </div>
+                <div class="row row-cols-1">
+                    @if (product.OnSale)
+                    {
+                        <div class="col-auto">
+                            <p class="text-muted text-opacity-50 text-decoration-line-through small me-2">@product.OldPrice TL</p>
+                        </div>
+                    }
+                    <div class="col">
+                        <p class="small">@product.Price TL</p>
+                    </div>
+                </div>
+                <hr />
+                <input hidden="hidden" name="productId" value="@product.ID" />
+                <div class="row">
+                    <div class="col mt-3">
+                        <button type="submit" class="btn bg-white border border-dark w-100 p-2 rounded-0">Hemen Satın al</button>
+                        @if (Request.IsAuthenticated && ViewBag.AddedToCart != null && (bool)ViewBag.AddedToCart)
+                        {
+                            <button id="addToCartBut" type="button" class="text-white bg-success p-2 mt-2 w-100 border-0">Sepete Eklendi!</button>
+                        }
+                        else
+                        {
+                            <button id="addToCartBut" type="button" class="text-white bg-black p-2 mt-2 w-100 border-0">Sepete Ekle</button>
+                        }
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="row">
+                    <div class="col">
+                        <h5 style="font-weight: 300">ÜRÜN AÇIKLAMASI</h5>
+                        <p class="small" style="font-weight: 300" id="productDetails">@product.Details</p>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+@section scripts {
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+        const addToCartBut = document.getElementById('addToCartBut');
+        const cartItemCount = document.getElementById('cartItemCount');
+
+        addToCartBut.addEventListener('click', addToCart);
+
+        addToCartBut.addEventListener('mouseenter', resetButton);
+
+        function addToCart() {
+            $.ajax({
+                url: '@Url.Action("AddToCart", "Home")',
+                type: 'GET',
+                dataType: 'json',
+                data: { productId: @product.ID },
+                success: function (data) {
+                    cartItemCount.textContent = JSON.parse(data.cartCount);
+                    updateButton("Sepete eklendi!", "bg-success", "bg-black");
+                },
+                error: function (error) {
+                    console.error("Error adding item to cart:", error.message || error);
+                }
+            });
+        }
+
+        function resetButton() {
+            if (addToCartBut.classList.contains('bg-success')) {
+                updateButton("Sepete ekle", "bg-black", "bg-success");
+            }
+        }
+
+        function updateButton(text, addClass, removeClass) {
+            addToCartBut.textContent = text;
+            addToCartBut.classList.remove(removeClass);
+            addToCartBut.classList.add(addClass);
+        }
+    });
+
+    </script>
+}
+
