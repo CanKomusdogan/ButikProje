@@ -180,16 +180,15 @@ namespace ButikProje.Controllers
 
         private void AddNewPhotos(masterEntities db, IEnumerable<string> photoServerPaths, int productId)
         {
-            foreach (string photoServerPath in photoServerPaths)
-            {
-                TblUrunFoto newProductPhoto = new TblUrunFoto
-                {
-                    UrunFoto = photoServerPath,
-                    UrunId = productId
-                };
+            if (photoServerPaths == null || !photoServerPaths.Any()) return;
 
-                db.TblUrunFotoes.Add(newProductPhoto);
-            }
+            IEnumerable<TblUrunFoto> newProductPhotos = photoServerPaths.Select(photoServerPath => new TblUrunFoto
+            {
+                UrunFoto = photoServerPath,
+                UrunId = productId
+            });
+
+            db.TblUrunFotoes.AddRange(newProductPhotos);
         }
 
         private void SetProductPricing(TblUrunTanim product, string newPrice, bool onSale, string newSalePrice)
@@ -620,13 +619,10 @@ namespace ButikProje.Controllers
                 using (masterEntities db = new masterEntities())
                 {
                     TblKategoriler newCategory = await db.TblKategorilers.FirstOrDefaultAsync(x => x.Id == newCategoryId);
-                    List<TblUrunTanim> selectedProducts = new List<TblUrunTanim>();
+                    List<TblUrunTanim> selectedProducts = await db.TblUrunTanims
+                                                                .Where(x => selectedProductsIds.Contains(x.UrunId))
+                                                                .ToListAsync();
 
-                    foreach (int selectedProductId in selectedProductsIds)
-                    {
-                        TblUrunTanim selectedProductQueried = await db.TblUrunTanims.FirstOrDefaultAsync(x => x.UrunId == selectedProductId);
-                        selectedProducts.Add(selectedProductQueried);
-                    }
                     foreach (TblUrunTanim selectedProduct in selectedProducts)
                     {
                         selectedProduct.UrunKategori = newCategory.KategoriIsim;
