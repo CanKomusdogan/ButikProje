@@ -694,12 +694,7 @@ namespace ButikProje.Commons
                 result = Convert.ToInt32(obj);
                 return true;
             }
-            catch (InvalidCastException)
-            {
-                result = 0;
-                return false;
-            }
-            catch (FormatException)
+            catch (Exception)
             {
                 result = 0;
                 return false;

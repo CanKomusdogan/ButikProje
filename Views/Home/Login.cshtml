@@ -42,7 +42,7 @@
                     </div>
 
                     <div class="col">
-                        <a onclick="window.location.hash='passwordchange';" style="cursor: pointer" class="d-flex flex-row-reverse text-black"
+                        <a id="passwordChangeButton" style="cursor: pointer" class="d-flex flex-row-reverse text-black"
                            data-bs-toggle="modal" data-bs-target="#passwordChangeModal">Parolamı unuttum</a>
                     </div>
                 </div>
@@ -127,10 +127,10 @@
                         <span class="ms-3 text-danger d-flex">&ast;</span>
                     </div>
                     <div class="col d-flex align-items-center">
-                        <input name="KaydolParola" id="signUpPassword" type="text" data-bs-toggle="tooltip" data-bs-placement="top"
+                        <input name="KaydolParola" id="signUpPassword" type="password" data-bs-toggle="tooltip" data-bs-placement="top"
                                title="En az 8 karakter. En az 1 rakam. En az 1 küçük harf ve en az 1 büyük harf."
                                aria-label="En az 8 karakter. En az 1 rakam. En az 1 küçük harf ve en az 1 büyük harf."
-                               placeholder="Parola" autocomplete="off" class="border p-2 w-100 sign-form form-control rounded-1" required />
+                               placeholder="Parola" autocomplete="off" class="border p-2 w-100 sign-form form-control rounded-1" minlength="8" maxlength="72" required />
                         <span class="ms-3 text-danger d-flex">&ast;</span>
                     </div>
                 </div>
@@ -250,7 +250,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="border-0 p-2 text-white bg-gradient w-auto boutique-button rounded-1">Devam Et</button>
-                    <button type="button" onclick="window.location.hash = '';" class="border-0 p-2 text-white bg-gradient w-auto boutique-button-dismiss rounded-1" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" id="passwordChangeClose" class="border-0 p-2 text-white bg-gradient w-auto boutique-button-dismiss rounded-1" data-bs-dismiss="modal">İptal</button>
                 </div>
 
             </form>
@@ -292,7 +292,24 @@
     }
 
     <script>
+        function changeHash() {
+            window.location.hash = '';
+            setTimeout(() => {
+                window.location.hash = 'passwordchange';
+            }, 0);
+        }
+        function resetHash() {
+            window.location.hash = '';
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('passwordChangeButton').addEventListener('click', () => {
+                changeHash();
+            });
+            document.getElementById('passwordChangeClose').addEventListener('click', () => {
+                resetHash();
+            });
+
             const urlHash = location.hash;
 
             if (urlHash === '#passwordchange') {

@@ -219,15 +219,18 @@
                                     <div style="width: 50px !important" class="col-auto"><span class="d-flex align-content-center justify-content-center">@user.Id</span></div>
                                     |
                                     <div class="col-auto">
-                                        @if (user.Rol == DbUsers.AdminRoleNumber)
-                                        {
-                                            <i class="fa-solid fa-key me-2"></i>
-                                            <span>Yönetici</span>
-                                        }
-                                        else if (user.Rol == DbUsers.UserRoleNumber)
-                                        {
-                                            <i class="fa-solid fa-user me-2"></i>
-                                            <span>Kullanıcı</span>
+                                        @{
+                                            string userIdName = user.Id.ToString();
+                                            if (Roles.IsUserInRole(userIdName, "Admin"))
+                                            {
+                                                <i class="fa-solid fa-key me-2"></i>
+                                                <span>Yönetici</span>
+                                            }
+                                            else if (Roles.IsUserInRole(userIdName, "User"))
+                                            {
+                                                <i class="fa-solid fa-user me-2"></i>
+                                                <span>Kullanıcı</span>
+                                            }
                                         }
                                     </div>
                                     |

@@ -40,6 +40,7 @@ namespace ButikProje.Models
         DbSet<TblButikAyarlar> TblButikAyarlars { get; set; } // tblButikAyarlar
         DbSet<TblButikKullanicilar> TblButikKullanicilars { get; set; } // tblButikKullanicilar
         DbSet<TblCihazlar> TblCihazlars { get; set; } // tblCihazlar
+        DbSet<TblGizliKodlar> TblGizliKodlars { get; set; } // tblGizliKodlar
         DbSet<TblIletisim> TblIletisims { get; set; } // tblIletisim
         DbSet<TblKategoriler> TblKategorilers { get; set; } // tblKategoriler
         DbSet<TblPayment> TblPayments { get; set; } // tblPayment
@@ -259,6 +260,7 @@ namespace ButikProje.Models
         public DbSet<TblButikAyarlar> TblButikAyarlars { get; set; } // tblButikAyarlar
         public DbSet<TblButikKullanicilar> TblButikKullanicilars { get; set; } // tblButikKullanicilar
         public DbSet<TblCihazlar> TblCihazlars { get; set; } // tblCihazlar
+        public DbSet<TblGizliKodlar> TblGizliKodlars { get; set; } // tblGizliKodlar
         public DbSet<TblIletisim> TblIletisims { get; set; } // tblIletisim
         public DbSet<TblKategoriler> TblKategorilers { get; set; } // tblKategoriler
         public DbSet<TblPayment> TblPayments { get; set; } // tblPayment
@@ -335,6 +337,7 @@ namespace ButikProje.Models
             modelBuilder.Configurations.Add(new TblButikAyarlarConfiguration());
             modelBuilder.Configurations.Add(new TblButikKullanicilarConfiguration());
             modelBuilder.Configurations.Add(new TblCihazlarConfiguration());
+            modelBuilder.Configurations.Add(new TblGizliKodlarConfiguration());
             modelBuilder.Configurations.Add(new TblIletisimConfiguration());
             modelBuilder.Configurations.Add(new TblKategorilerConfiguration());
             modelBuilder.Configurations.Add(new TblPaymentConfiguration());
@@ -355,6 +358,7 @@ namespace ButikProje.Models
             modelBuilder.Configurations.Add(new TblButikAyarlarConfiguration(schema));
             modelBuilder.Configurations.Add(new TblButikKullanicilarConfiguration(schema));
             modelBuilder.Configurations.Add(new TblCihazlarConfiguration(schema));
+            modelBuilder.Configurations.Add(new TblGizliKodlarConfiguration(schema));
             modelBuilder.Configurations.Add(new TblIletisimConfiguration(schema));
             modelBuilder.Configurations.Add(new TblKategorilerConfiguration(schema));
             modelBuilder.Configurations.Add(new TblPaymentConfiguration(schema));
@@ -2550,6 +2554,7 @@ namespace ButikProje.Models
         public DbSet<TblButikAyarlar> TblButikAyarlars { get; set; } // tblButikAyarlar
         public DbSet<TblButikKullanicilar> TblButikKullanicilars { get; set; } // tblButikKullanicilar
         public DbSet<TblCihazlar> TblCihazlars { get; set; } // tblCihazlar
+        public DbSet<TblGizliKodlar> TblGizliKodlars { get; set; } // tblGizliKodlar
         public DbSet<TblIletisim> TblIletisims { get; set; } // tblIletisim
         public DbSet<TblKategoriler> TblKategorilers { get; set; } // tblKategoriler
         public DbSet<TblPayment> TblPayments { get; set; } // tblPayment
@@ -2573,6 +2578,7 @@ namespace ButikProje.Models
             TblButikAyarlars = new FakeDbSet<TblButikAyarlar>("Id");
             TblButikKullanicilars = new FakeDbSet<TblButikKullanicilar>("Id");
             TblCihazlars = new FakeDbSet<TblCihazlar>("Id");
+            TblGizliKodlars = new FakeDbSet<TblGizliKodlar>("Id");
             TblIletisims = new FakeDbSet<TblIletisim>("Id");
             TblKategorilers = new FakeDbSet<TblKategoriler>("Id");
             TblPayments = new FakeDbSet<TblPayment>("Id");
@@ -3714,10 +3720,9 @@ namespace ButikProje.Models
     {
         public int Id { get; set; } // id (Primary key)
         public string Email { get; set; } // email (length: 320)
-        public string Parola { get; set; } // parola (length: 20)
+        public string ParolaHash { get; set; } // parola_hash (length: 60)
         public string Ad { get; set; } // ad (length: 50)
         public string Soyad { get; set; } // soyad (length: 50)
-        public int Rol { get; set; } // rol
     }
 
     // tblCihazlar
@@ -3726,6 +3731,14 @@ namespace ButikProje.Models
         public int Id { get; set; } // id (Primary key)
         public int UserId { get; set; } // user_id
         public string DeviceToken { get; set; } // device_token (length: 255)
+    }
+
+    // tblGizliKodlar
+    public class TblGizliKodlar
+    {
+        public int Id { get; set; } // id (Primary key)
+        public int Userid { get; set; } // userid
+        public string Verificationcode { get; set; } // verificationcode
     }
 
     // tblIletisim
@@ -3966,10 +3979,9 @@ namespace ButikProje.Models
 
             Property(x => x.Id).HasColumnName(@"id").HasColumnType("int").IsRequired().HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
             Property(x => x.Email).HasColumnName(@"email").HasColumnType("nvarchar").IsRequired().HasMaxLength(320);
-            Property(x => x.Parola).HasColumnName(@"parola").HasColumnType("nvarchar").IsRequired().HasMaxLength(20);
+            Property(x => x.ParolaHash).HasColumnName(@"parola_hash").HasColumnType("varchar").IsRequired().IsUnicode(false).HasMaxLength(60);
             Property(x => x.Ad).HasColumnName(@"ad").HasColumnType("nvarchar").IsRequired().HasMaxLength(50);
             Property(x => x.Soyad).HasColumnName(@"soyad").HasColumnType("nvarchar").IsRequired().HasMaxLength(50);
-            Property(x => x.Rol).HasColumnName(@"rol").HasColumnType("int").IsRequired();
         }
     }
 
@@ -3989,6 +4001,25 @@ namespace ButikProje.Models
             Property(x => x.Id).HasColumnName(@"id").HasColumnType("int").IsRequired().HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
             Property(x => x.UserId).HasColumnName(@"user_id").HasColumnType("int").IsRequired();
             Property(x => x.DeviceToken).HasColumnName(@"device_token").HasColumnType("varchar").IsRequired().IsUnicode(false).HasMaxLength(255);
+        }
+    }
+
+    // tblGizliKodlar
+    public class TblGizliKodlarConfiguration : EntityTypeConfiguration<TblGizliKodlar>
+    {
+        public TblGizliKodlarConfiguration()
+            : this("dbo")
+        {
+        }
+
+        public TblGizliKodlarConfiguration(string schema)
+        {
+            ToTable("tblGizliKodlar", schema);
+            HasKey(x => x.Id);
+
+            Property(x => x.Id).HasColumnName(@"id").HasColumnType("int").IsRequired().HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
+            Property(x => x.Userid).HasColumnName(@"userid").HasColumnType("int").IsRequired();
+            Property(x => x.Verificationcode).HasColumnName(@"verificationcode").HasColumnType("nvarchar(max)").IsRequired();
         }
     }
 

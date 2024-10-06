@@ -1,8 +1,8 @@
 ﻿using ButikProje.Models;
+using FirebaseAdmin.Messaging;
 using Iyzipay;
 using Iyzipay.Model;
 using Iyzipay.Request;
-using SignalR = Microsoft.AspNet.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -15,22 +15,43 @@ using System.Net.Mail;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
 using System.Web.UI.WebControls;
 using static ButikProje.Commons.DbCommons;
-using FirebaseAdmin.Messaging;
-using System.Text.RegularExpressions;
+using BCryptNet = BCrypt.Net;
 
 namespace ButikProje.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly bool WebsiteActive;
+        private const string ErrorMessage = "ErrorMessage";
+        private const string UnexpectedErrorMessage = "Beklenmedik bir hata oluştu. Eğer hata ile tekrar karşılaşırsanız website sahibi ile iletişime geçiniz. \n";
+        private const int DefaultWorkFactor = 10;
+
+        private readonly string EnvironmentBasedEmail;
+        private readonly string EnvironmentBasedEmailPassword;
+        private readonly string EnvironmentBasedSmtpHost;
+        private readonly int EnvironmentBasedSmtpPort;
 
         public HomeController()
         {
+#if DEBUG
+            EnvironmentBasedEmail = "himmetcangibisiyok@gmail.com";
+            EnvironmentBasedEmailPassword = "tdes sshe huwt vjqo";
+            EnvironmentBasedSmtpHost = "smtp.gmail.com";
+            EnvironmentBasedSmtpPort = 587;
+#else
+                EnvironmentBasedEmail = "postmaster@pdbutik.com";
+                EnvironmentBasedEmailPassword = "Banyemicem12*";
+                EnvironmentBasedSmtpHost = "mail5019.site4now.net";
+                EnvironmentBasedSmtpPort = 25;
+#endif
+
             using (masterEntities db = new masterEntities())
             {
                 WebsiteActive = Convert.ToBoolean(db.TblButikAyarlars.FirstOrDefault().SiteAktif);
@@ -51,9 +72,6 @@ namespace ButikProje.Controllers
                 Roles.CreateRole(role);
             }
         }
-
-        private readonly bool WebsiteActive;
-        private const string ErrorMessage = "ErrorMessage";
 
         private async Task<DbInterface> GetModel(bool minimal = false, Filters filters = Filters.Default)
         {
@@ -147,12 +165,12 @@ namespace ButikProje.Controllers
 
         private static bool ValidateEmailFormat(string email)
         {
-            return !string.IsNullOrWhiteSpace(email) && Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            return !string.IsNullOrWhiteSpace(email) && email.Length <= 320 && Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$");
         }
 
         private static bool ValidatePasswordFormat(string password)
         {
-            if (string.IsNullOrWhiteSpace(password)) return false;
+            if (string.IsNullOrWhiteSpace(password) || password.Length > 72) return false;
 
             // Minimum length 8, at least one uppercase, one lowercase and one digit
             return Regex.IsMatch(password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$");
@@ -180,6 +198,37 @@ namespace ButikProje.Controllers
             return (true, string.Empty);
         }
 
+        private string HashPassword(string password)
+        {
+            return BCryptNet.BCrypt.HashPassword(password, DefaultWorkFactor);
+        }
+
+        private async Task<TblButikKullanicilar> SaveUser(masterEntities db, string name, string surname, string email, string pwdHash, int role = DbUsers.UserRoleNumber)
+        {
+            TblButikKullanicilar user = new TblButikKullanicilar
+            {
+                Ad = name,
+                Soyad = surname,
+                Email = email,
+                ParolaHash = pwdHash
+            };
+            db.TblButikKullanicilars.Add(user);
+            await db.SaveChangesAsync();
+
+            return user;
+        }
+
+        private bool VerifyUserPassword(TblButikKullanicilar user, string password)
+        {
+            return VerifyPasswordHash(password, user.ParolaHash);
+        }
+
+        private bool VerifyPasswordHash(string password, string storedHash)
+        {
+            return BCryptNet.BCrypt.Verify(password, storedHash);
+        }
+
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> SignIn(string GirisEmail, string GirisParola, bool OnuHatirla, string returnUrl)
@@ -195,40 +244,31 @@ namespace ButikProje.Controllers
 
                     using (masterEntities db = new masterEntities())
                     {
-                        if (await db.TblButikKullanicilars.AnyAsync(x => x.Email == GirisEmail) && await db.TblButikKullanicilars.Where(x => x.Email == GirisEmail).AnyAsync(x => x.Parola == GirisParola))
+                        TblButikKullanicilar userEfInstance = await db.TblButikKullanicilars.SingleOrDefaultAsync(x => x.Email == GirisEmail) ?? throw new SecurityException("Kullanıcı bulunamadı.");
+                        if (VerifyUserPassword(userEfInstance, GirisParola))
                         {
-                            TblButikKullanicilar userEfInstance = await db.TblButikKullanicilars.Where(x => x.Email == GirisEmail).SingleOrDefaultAsync();
                             string userName = userEfInstance.Id.ToString();
 
                             string role = string.Empty;
 
-                            if (await db.TblAdmins.AnyAsync(x => x.KullaniciId == userEfInstance.Id) && userEfInstance.Rol != DbUsers.AdminRoleNumber)
-                            {
-                                userEfInstance.Rol = DbUsers.AdminRoleNumber;
-                                await db.SaveChangesAsync();
-                            }
+                            bool isAdmin = await db.TblAdmins.AnyAsync(x => x.KullaniciId == userEfInstance.Id);
 
-                            role = userEfInstance.Rol == DbUsers.UserRoleNumber ? "User" :
-                                          userEfInstance.Rol == DbUsers.AdminRoleNumber ? "Admin" :
-                                          throw new SecurityException();
+                            role = !isAdmin ? DbUsers.UserRoleName : DbUsers.AdminRoleName ;
 
                             if (!Roles.IsUserInRole(userName, role))
+                            {
                                 Roles.AddUserToRole(userName, role);
+                            }
 
+                            Session.Abandon();
                             FormsAuthentication.SetAuthCookie(userName, OnuHatirla);
-
-                            Session.Remove("TempUID");
 
                             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                             {
                                 return Redirect(returnUrl);
                             }
 
-                            if (role.Equals("User"))
-                            {
-                                return RedirectToAction("Index", "Home");
-                            }
-                            else if (role.Equals("Admin"))
+                            if (role.Equals("Admin"))
                             {
                                 return RedirectToAction("Index", "Admin");
                             }
@@ -237,11 +277,15 @@ namespace ButikProje.Controllers
 
                         }
                         else
+                        {
                             throw new SecurityException(GetDetailedResultMessage(ErrDetails.InvalidLogin, OccuredOn.Login));
+                        }
                     }
                 }
                 else
+                {
                     throw new Exception(GetDetailedResultMessage(ErrDetails.AlreadySignedIn, OccuredOn.Login));
+                }
             }
             catch (Exception ex)
             {
@@ -284,25 +328,66 @@ namespace ButikProje.Controllers
             }
         }
 
+        /// <summary>
+        /// Sets the temporary user id if the user is not authenticated or the temp uid hasn't been set and returns the uid. <br />
+        /// If it has been set, the temp uid is returned as is.<br />
+        /// It's more appropriate to use the returned value only once when the temp uid is being set since it's more fitting for the design pattern.
+        /// </summary>
+        /// <returns>The User ID</returns>
+        private int SetTempUIDWrapper()
+        {
+            int userId;
+            if (!Request.IsAuthenticated)
+            {
+                if (TryConvertToInt(Session["TempUID"], out int uid))
+                {
+                    userId = uid;
+                }
+                else
+                {
+                    SetTemporaryUID();
+                    userId = Convert.ToInt32(Session["TempUID"]);
+                }
+            }
+            else
+            {
+                userId = Convert.ToInt32(User.Identity.Name);
+            }
+
+            return userId;
+        }
+
         private async Task SendEmail(MailMessage mailMessage)
         {
-            using (SmtpClient smtpClient = new SmtpClient("mail5019.site4now.net", 25))
+            using (SmtpClient smtpClient = new SmtpClient(EnvironmentBasedSmtpHost, EnvironmentBasedSmtpPort))
             {
-                smtpClient.Credentials = new NetworkCredential("postmaster@pdbutik.com", "Banyemicem12*");
+                smtpClient.Credentials = new NetworkCredential(EnvironmentBasedEmail, EnvironmentBasedEmailPassword);
                 smtpClient.Timeout = 300000;
+                smtpClient.EnableSsl = true;
 
                 await smtpClient.SendMailAsync(mailMessage);
             }
         }
 
-        private async Task SendVerificationEmail(string receiverEmail)
+        private async Task SendVerificationEmail(masterEntities db, string receiverEmail)
         {
+            int userId = SetTempUIDWrapper();
+
             byte[] protectedCode = ProtectedData.Protect(BitConverter.GetBytes(GenerateVerificationCode()), null, DataProtectionScope.LocalMachine);
-            Session["ProtectedCode"] = protectedCode;
+            string encryptedBase64 = Convert.ToBase64String(protectedCode);
+
+            TblGizliKodlar secretCode = new TblGizliKodlar
+            {
+                Userid = userId,
+                Verificationcode = encryptedBase64,
+            };
+
+            db.TblGizliKodlars.Add(secretCode);
+            await db.SaveChangesAsync();
 
             using (MailMessage mailMessage = new MailMessage())
             {
-                mailMessage.From = new MailAddress("postmaster@pdbutik.com");
+                mailMessage.From = new MailAddress(EnvironmentBasedEmail);
                 mailMessage.Subject = "P&D Boutique Doğrulama kodunuz";
                 mailMessage.IsBodyHtml = true;
                 mailMessage.Body = "<h3>Doğrulama kodu: " + BitConverter.ToInt32(ProtectedData.Unprotect(protectedCode, null, DataProtectionScope.LocalMachine), 0) + "</h3>";
@@ -318,19 +403,26 @@ namespace ButikProje.Controllers
             {
                 byte[] data = new byte[4];
                 rng.GetBytes(data);
-                return BitConverter.ToInt32(data, 0) % 900000 + 100000; // Ensuring the code is 6 digits
+
+                // Ensuring the code is 6 digits 
+                return (BitConverter.ToInt32(data, 0) % 900000 + 900000) % 900000 + 100000; // Avoid negative value
             }
         }
 
-        private byte[] UnprotectData(byte[] data)
+        private byte[] UnprotectData(string encryptedBase64)
         {
-            return ProtectedData.Unprotect(data, null, DataProtectionScope.LocalMachine);
+            byte[] encryptedBytes = Convert.FromBase64String(encryptedBase64);
+            byte[] decryptedBytes = ProtectedData.Unprotect(encryptedBytes, null, DataProtectionScope.LocalMachine);
+
+            return decryptedBytes;
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Register(string KaydolAd, string KaydolSoyad, string KaydolEmail, string KaydolParola)
         {
+            (bool valid, string msg) = ValidateForm(KaydolEmail, KaydolParola);
+            if (!valid) throw new SecurityException(msg);
 
             if (!ModelState.IsValid)
             {
@@ -344,13 +436,15 @@ namespace ButikProje.Controllers
                 {
                     if (!await db.TblButikKullanicilars.AnyAsync(x => x.Email == KaydolEmail))
                     {
-                        await SendVerificationEmail(KaydolEmail);
+                        await SendVerificationEmail(db, KaydolEmail);
 
-                        TempData["RegisterName"] = KaydolAd; TempData["RegisterSurname"] = KaydolSoyad; TempData["RegisterEmail"] = KaydolEmail; TempData["RegisterPassword"] = KaydolParola;
+                        TempData["RegisterName"] = KaydolAd; TempData["RegisterSurname"] = KaydolSoyad; TempData["RegisterEmail"] = KaydolEmail; TempData["RegisterPasswordHash"] = HashPassword(KaydolParola);
                         TempData["VerificationStarted"] = true;
                     }
                     else
+                    {
                         throw new Exception(GetDetailedResultMessage(ErrDetails.EmailExists, OccuredOn.Register));
+                    }
                 }
             }
             catch (Exception ex)
@@ -363,57 +457,122 @@ namespace ButikProje.Controllers
             return RedirectToAction("Login", "Home");
         }
 
+        private async Task<byte[]> GetProtectedCode(masterEntities db)
+        {
+            int uid = SetTempUIDWrapper();
+
+            TblGizliKodlar secretCode = await db.TblGizliKodlars.FirstOrDefaultAsync(c => c.Userid == uid);
+            return UnprotectData(secretCode.Verificationcode);
+        }
+
+        /// <returns><see langword="true"/> if the protected code was removed; otherwise <see langword="false"/></returns>
+        private async Task<bool> DestroyProtectedCode(masterEntities db)
+        {
+            int uid = SetTempUIDWrapper();
+
+            IQueryable<TblGizliKodlar> secretCodes = db.TblGizliKodlars.Where(c => c.Userid == uid);
+            if (secretCodes != null && await secretCodes.AnyAsync())
+            {
+                db.TblGizliKodlars.RemoveRange(secretCodes);
+
+                if (await db.SaveChangesAsync() != 0)
+                {
+                    return true;
+                }
+                else return false;
+            }
+            else return false;
+        }
+
+        private void HandleDbValidationErrors(DbEntityValidationException evx)
+        {
+            StringBuilder errMsgs = new StringBuilder();
+
+            foreach (DbEntityValidationResult validationErrors in evx.EntityValidationErrors)
+            {
+                foreach (DbValidationError validationError in validationErrors.ValidationErrors)
+                {
+                    string errMsg = $"Property: {validationError.PropertyName}, Error: {validationError.ErrorMessage}";
+                    errMsgs.Append(errMsg).AppendLine();
+                }
+            }
+
+            TempData[ErrorMessage] = errMsgs.ToString();
+        }
+
         [HttpPost]
         public async Task<ActionResult> VerifyEmail(int inputVerifyCode)
         {
-            try
+            using (masterEntities db = new masterEntities())
             {
-                if (BitConverter.ToInt32(UnprotectData((byte[])Session["ProtectedCode"]), 0) == inputVerifyCode)
+                try
                 {
-                    using (masterEntities db = new masterEntities())
+                    int verifyCode = BitConverter.ToInt32(await GetProtectedCode(db), 0);
+                    if (verifyCode == inputVerifyCode)
                     {
                         TblButikKullanicilar dbUsersInstance = new TblButikKullanicilar
                         {
                             Ad = (string)TempData["RegisterName"],
                             Soyad = (string)TempData["RegisterSurname"],
 
-                            Email = (string)TempData["RegisterEmail"],
-                            Parola = (string)TempData["RegisterPassword"],
-                            Rol = DbUsers.UserRoleNumber
+                            Email = (string)TempData["RegisterEmail"]
                         };
 
-                        Session.Remove("ProtectedCode");
+                        if (TempData["RegisterPasswordHash"] is string encryptedPwd)
+                        {
+                            dbUsersInstance.ParolaHash = encryptedPwd;
+                        }
+                        else throw new SecurityException("Güvenlik hatası belirdi. Eğer hata ile tekrar karşılaşırsanız website sahibi ile iletişimie geçiniz.");
 
                         db.TblButikKullanicilars.Add(dbUsersInstance);
 
-                        if (GetResult(await db.SaveChangesAsync() != 0, true) == Result.Error)
+                        int saveResult = await db.SaveChangesAsync();
+                        if (GetResult(saveResult != 0, true) == Result.Error)
                         {
                             throw new Exception(GetResultMessage(Result.Error, OccuredOn.Register));
                         }
-                        else
-                        {
-                            TempData["VerificationStarted"] = false;
 
-                            return Json(new { message = GetResultMessage(Result.Success, OccuredOn.Verification), errOcurred = false });
-                        }
+                        TempData["VerificationStarted"] = false;
+
+                        return Json(new { message = GetResultMessage(Result.Success, OccuredOn.Verification), errOcurred = false });
+                    }
+                    else
+                    {
+                        return Json(new { message = GetDetailedResultMessage(ErrDetails.IncorrectVerificationCode, OccuredOn.Register), errOcurred = true });
                     }
                 }
-                else
-                    return Json(new { message = GetDetailedResultMessage(ErrDetails.IncorrectVerificationCode, OccuredOn.Register), errOcurred = true });
-            }
-            catch (SmtpException ex)
-            {
-                Console.Error.WriteLine(ex.Message);
-                if (ex.StatusCode == SmtpStatusCode.GeneralFailure && ex.InnerException is System.IO.IOException ioEx && ioEx.InnerException is System.Net.Sockets.SocketException sockEx && sockEx.SocketErrorCode == System.Net.Sockets.SocketError.TimedOut)
+                catch (SmtpException ex)
                 {
-                    TempData[ErrorMessage] = "Doğrulama zaman aşımına uğradı.";
-                }
-                else
-                {
-                    TempData[ErrorMessage] = "E-Mail gönderilemedi: " + ex.Message;
-                }
+                    Console.Error.WriteLine(ex.Message);
+                    if (ex.StatusCode == SmtpStatusCode.GeneralFailure && ex.InnerException is System.IO.IOException ioEx
+                        && ioEx.InnerException is System.Net.Sockets.SocketException sockEx && sockEx.SocketErrorCode == System.Net.Sockets.SocketError.TimedOut)
+                    {
+                        TempData[ErrorMessage] = "Doğrulama zaman aşımına uğradı.";
+                    }
+                    else
+                    {
+                        TempData[ErrorMessage] = "E-Mail gönderilemedi: " + ex.Message;
+                    }
 
-                return RedirectToAction("Login", "Home");
+                    return RedirectToAction("Login", "Home");
+                }
+                catch (DbEntityValidationException evx)
+                {
+                    HandleDbValidationErrors(evx);
+
+                    return RedirectToAction("Login", "Home");
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex.Message);
+                    TempData[ErrorMessage] = UnexpectedErrorMessage + ex.Message;
+
+                    return RedirectToAction("Login", "Home");
+                }
+                finally
+                {
+                    await DestroyProtectedCode(db);
+                }
             }
         }
 
@@ -428,7 +587,7 @@ namespace ButikProje.Controllers
                 {
                     if (await db.TblButikKullanicilars.AnyAsync(x => x.Email == emailTrimmed))
                     {
-                        await SendVerificationEmail(emailTrimmed);
+                        await SendVerificationEmail(db, emailTrimmed);
 
                         TempData["PasswordChangeEmail"] = emailTrimmed;
                         TempData["PasswordChangeVerificationStarted"] = true;
@@ -454,19 +613,23 @@ namespace ButikProje.Controllers
         {
             try
             {
-                if (BitConverter.ToInt32(UnprotectData((byte[])Session["ProtectedCode"]), 0) == inputVerifyCode)
+                using (masterEntities db = new masterEntities())
                 {
-                    using (masterEntities db = new masterEntities())
+                    if (BitConverter.ToInt32(await GetProtectedCode(db), 0) == inputVerifyCode)
                     {
                         string passwordChangeEmail = (string)TempData["PasswordChangeEmail"];
 
-                        TblButikKullanicilar user = await db.TblButikKullanicilars.FirstAsync(x => x.Email == passwordChangeEmail);
+                        TblButikKullanicilar user = await db.TblButikKullanicilars.FirstOrDefaultAsync(x => x.Email == passwordChangeEmail)
+                                                    ?? throw new Exception("Kullanıcı bulanamadı, eğer bu hata ile tekrar karşılaşırsanız website sahibi ile iletişime geçiniz.");
 
-                        user.Parola = newPassword;
+                        string passwordHash = HashPassword(newPassword);
+                        user.ParolaHash = passwordHash;
 
 
                         if (GetResult(await db.SaveChangesAsync() != 0, true) == Result.Error)
+                        {
                             throw new Exception(GetResultMessage(Result.Error, OccuredOn.PasswordChange));
+                        }
                         else
                         {
                             TempData["VerificationStarted"] = false;
@@ -474,11 +637,11 @@ namespace ButikProje.Controllers
                             return Json(new { message = GetResultMessage(Result.Success, OccuredOn.Verification), errOcurred = false });
                         }
                     }
+                    else
+                    {
+                        return Json(new { message = GetDetailedResultMessage(ErrDetails.IncorrectVerificationCode, OccuredOn.PasswordChange), errOcurred = true });
+                    }
                 }
-                else
-                    return Json(new { message = GetDetailedResultMessage(ErrDetails.IncorrectVerificationCode, OccuredOn.PasswordChange), errOcurred = true });
-
-
             }
             catch (Exception ex)
             {
@@ -1196,7 +1359,7 @@ namespace ButikProje.Controllers
 
                             await db.SaveChangesAsync();
 
-                            int[] adminIds = DbUsers.GetIdsWithRole(db, "Admin");
+                            int[] adminIds = await DbUsers.GetIdsWithRole(db, "Admin");
                             string[] tokens = await db.TblCihazlars.Where(x => adminIds.Contains(x.UserId)).Select(x => x.DeviceToken).ToArrayAsync();
                             await SendNewOrderNotifs(tokens);
                         }

@@ -54,6 +54,7 @@
     FilterSettings.TableFilters.Add(new RegexIncludeFilter("^tblUrunBedenleri$"));
     FilterSettings.TableFilters.Add(new RegexIncludeFilter("^tblBedenler$"));
     FilterSettings.TableFilters.Add(new RegexIncludeFilter("^tblCihazlar$"));
+    FilterSettings.TableFilters.Add(new RegexIncludeFilter("^tblGizliKodlar$"));
 
     // Examples:
     //FilterSettings.IncludeViews                 = true;

@@ -135,7 +135,6 @@ namespace ButikProje.Controllers
                         selectedProductCategory = selectedCategory.Id;
                     }
 
-
                     if (onSale)
                     {
                         return Json(new { selectedProductName, selectedProductInfo, selectedProductPrice, selectedProductPhotos, onSale, selectedProductOldPrice, selectedProductSalePercentage, selectedProductCategory });
@@ -456,21 +455,36 @@ namespace ButikProje.Controllers
             return PartialView("TempFormCFC");
         }
 
+        private async Task<string> RemoveUser(masterEntities db, int uid)
+        {
+            TblButikKullanicilar user = await db.TblButikKullanicilars.FirstOrDefaultAsync(x => x.Id == uid) ?? throw new Exception("Kullanıcı bulunamadı. Bu hata ile tekrar karşılaşırsanız yazılımcı ile iletişime geçiniz.");
+            bool userIsAdmin = await db.TblAdmins.AnyAsync(x => x.KullaniciId == uid);
+            string userRoleName = !userIsAdmin ? "User" : "Admin";
+
+            db.TblButikKullanicilars.Remove(user);
+
+            string uidName = uid.ToString();
+            if (Roles.IsUserInRole(uidName, userRoleName))
+            {
+                Roles.RemoveUserFromRole(uidName, userRoleName);
+
+                if (userIsAdmin && await db.TblAdmins.FirstOrDefaultAsync(x => x.KullaniciId == uid) is TblAdmin adminRef)
+                {
+                    db.TblAdmins.Remove(adminRef);
+                }
+            }
+
+            string result = GetResultMessage(GetResult(await db.SaveChangesAsync() != 0, true));
+            return result;
+        } 
+
         public async Task<ActionResult> DeleteUser(int userId)
         {
             try
             {
                 using (masterEntities db = new masterEntities())
                 {
-                    TblButikKullanicilar user = await db.TblButikKullanicilars.FirstOrDefaultAsync(x => x.Id == userId);
-                    db.TblButikKullanicilars.Remove(user);
-                    if (Roles.IsUserInRole(userId.ToString(), DbUsers.GetNameOfRoleNum(user.Rol)))
-                    {
-                        Roles.RemoveUserFromRole(userId.ToString(), DbUsers.GetNameOfRoleNum(user.Rol));
-                    }
-
-                    string result = GetResultMessage(GetResult(await db.SaveChangesAsync() != 0, true));
-                    TempData[Result] = result;
+                    TempData[Result] = await RemoveUser(db, userId);
                 }
             }
             catch (Exception ex)
@@ -491,7 +505,6 @@ namespace ButikProje.Controllers
 
                     if (currentRole == DbUsers.AdminRoleNumber)
                     {
-                        user.Rol = DbUsers.UserRoleNumber;
                         db.TblAdmins.Remove(await db.TblAdmins.SingleOrDefaultAsync(x => x.KullaniciId == userId));
 
                         string userIdName = userId.ToString();
@@ -508,8 +521,6 @@ namespace ButikProje.Controllers
                     }
                     else if (currentRole == DbUsers.UserRoleNumber)
                     {
-                        user.Rol = DbUsers.AdminRoleNumber;
-
                         TblAdmin tblAdmins = new TblAdmin
                         {
                             KullaniciId = userId
