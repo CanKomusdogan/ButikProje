@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="shortcut icon" href="@Url.Content("/Content/img/boutique.png")" />
+    <link rel="shortcut icon" href="@Url.Content("/Content/img/logo.png")" />
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -225,122 +225,15 @@
         </div>
     </div>
 
+    <audio id="notifAudio" hidden>
+        <source src="~/Content/sounds/notification-sound.mp3" type="audio/mpeg">
+        <source src="~/Content/sounds/notification-sound.ogg" type="audio/ogg">
+    </audio>
+
     <script src="https://kit.fontawesome.com/dd8a07ad56.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            $('.select-2').select2({
-                width: '300px'
-            });
+    <script src="~/dist/Layout/main.js"></script>
 
-            const searchSubmit = document.getElementById('searchSubmit');
-            let searchInputValid = false;
-
-            $('#searchInput').on('input', function (e) {
-                const input = e.target.value.trim();
-
-                if (input) {
-                    if ($(searchSubmit).hasClass("disabled") && $(searchSubmit).hasClass("border-0")) {
-                        searchInputValid = true;
-                        $(searchSubmit).removeClass("disabled");
-                        $(searchSubmit).removeClass("border-0")
-                    }
-                } else if (!$(searchSubmit).hasClass("disabled") && !$(searchSubmit).hasClass("border-0")) {
-                    searchInputValid = false;
-                    $(searchSubmit).addClass("disabled")
-                    $(searchSubmit).addClass("border-0")
-                }
-            });
-
-            $('#searchForm').on('submit', function (e) {
-                if (!searchInputValid) {
-                    e.preventDefault();
-                }
-            });
-
-            $(document).ajaxStart(function () {
-                $('#loadingScreen').css('display', 'flex');
-            });
-
-            $(document).ajaxStop(function () {
-                $('#loadingScreen').css('display', 'none');
-            });
-
-            $('#signout').on('click', () => {
-                $.ajax({
-                    url: '@Url.Action("SignOut", "Home")',
-                    type: 'POST',
-                    success: function (response) {
-                        if (response.success) {
-                            $('#userDropdown').remove();
-                            $('#navbarSupportedContent').append('<a href="@Url.Action("Login", "Home")" class="btn"> <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Giriş yap</a>');
-
-                            $('#cartItemCount').text("0");
-
-                            $('#multiModalText').text("Çıkış yapıldı.");
-                            $('#multiModal').modal('show');
-                        } else {
-                            $('#multiModalText').text("Çıkış yapılamadı.\n" + response.message);
-                            $('#multiModal').modal('show');
-                        }
-                    },
-                    error: function (errorThrown) {
-                        $('#multiModalText').text("Çıkış yapılamadı.\n" + errorThrown);
-                        console.error(errorThrown);
-                    }
-                });
-            });
-
-        });
-    </script>
-    <script type="module">
-        const swiper = new Swiper('.swiper-all', {
-            lazy: true,
-            loop: true,
-            spaceBetween: 30,
-            pagination: {
-                el: ".swiper-pagination",
-                clickable: true,
-            },
-            touchEventsTarget: 'container',
-        });
-        const swiperProduct = new Swiper('.swiper-product', {
-            lazy: true,
-            loop: true,
-            spaceBetween: 30,
-            navigation: {
-                nextEl: ".swiper-button-next",
-                prevEl: ".swiper-button-prev",
-            },
-            touchEventsTarget: 'container',
-        });
-
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-
-    </script>
-
-    <script>
-        (() => {
-            'use strict'
-
-            // Fetch all the forms we want to apply custom Bootstrap validation styles to
-            const forms = document.querySelectorAll('.needs-validation');
-
-            // Loop over them and prevent submission
-            Array.from(forms).forEach(form => {
-                form.addEventListener('submit', event => {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-
-                    form.classList.add('was-validated');
-                }, false);
-            });
-        })();
-
-    </script>
     @RenderSection("scripts", required: false)
 
     <noscript>Bu site javascript kullanıyor. Lütfen sitenin düzgün çalışması için javascripti açınız.</noscript>

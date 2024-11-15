@@ -14,8 +14,6 @@ namespace ButikProje
         public static FirebaseApp FirebaseApp { get; private set; }
         public void Configuration(IAppBuilder app)
         {
-            app.MapSignalR();
-
             FirebaseApp = FirebaseApp.Create(new AppOptions()
             {
                 Credential = GoogleCredential.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pdbutik-d5391-firebase-adminsdk-t3in0-feb8380bc7.json"))

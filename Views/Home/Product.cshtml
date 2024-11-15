@@ -39,9 +39,12 @@
                     <div class="col">
                         <p class="small">@product.Price TL</p>
                     </div>
+                    <div class="col">
+                        @Html.DropDownList("sizes", new SelectList(product.Sizes, "Id", "Beden"), new { @id = "sizesListBox", @class = "form-select sign-form w-25" })
+                    </div>
                 </div>
                 <hr />
-                <input hidden="hidden" name="productId" value="@product.ID" />
+                <input hidden="hidden" id="pid" name="productId" value="@product.ID" />
                 <div class="row">
                     <div class="col mt-3">
                         <button type="submit" class="btn bg-white border border-dark w-100 p-2 rounded-0">Hemen Satın al</button>
@@ -71,44 +74,6 @@
 
 
 @section scripts {
-    <script>
-document.addEventListener('DOMContentLoaded', function () {
-        const addToCartBut = document.getElementById('addToCartBut');
-        const cartItemCount = document.getElementById('cartItemCount');
-
-        addToCartBut.addEventListener('click', addToCart);
-
-        addToCartBut.addEventListener('mouseenter', resetButton);
-
-        function addToCart() {
-            $.ajax({
-                url: '@Url.Action("AddToCart", "Home")',
-                type: 'GET',
-                dataType: 'json',
-                data: { productId: @product.ID },
-                success: function (data) {
-                    cartItemCount.textContent = JSON.parse(data.cartCount);
-                    updateButton("Sepete eklendi!", "bg-success", "bg-black");
-                },
-                error: function (error) {
-                    console.error("Error adding item to cart:", error.message || error);
-                }
-            });
-        }
-
-        function resetButton() {
-            if (addToCartBut.classList.contains('bg-success')) {
-                updateButton("Sepete ekle", "bg-black", "bg-success");
-            }
-        }
-
-        function updateButton(text, addClass, removeClass) {
-            addToCartBut.textContent = text;
-            addToCartBut.classList.remove(removeClass);
-            addToCartBut.classList.add(addClass);
-        }
-    });
-
-    </script>
+    <script src="~/Scripts/Product/main.js"></script>
 }
 

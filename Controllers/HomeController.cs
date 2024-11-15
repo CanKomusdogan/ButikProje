@@ -49,12 +49,20 @@ namespace ButikProje.Controllers
                 EnvironmentBasedEmail = "postmaster@pdbutik.com";
                 EnvironmentBasedEmailPassword = "Banyemicem12*";
                 EnvironmentBasedSmtpHost = "mail5019.site4now.net";
-                EnvironmentBasedSmtpPort = 25;
+                EnvironmentBasedSmtpPort = 465;
 #endif
 
             using (masterEntities db = new masterEntities())
             {
-                WebsiteActive = Convert.ToBoolean(db.TblButikAyarlars.FirstOrDefault().SiteAktif);
+                TblButikAyarlar settings = db.TblButikAyarlars.FirstOrDefault();
+                if (settings != null && settings.SiteAktif is int websiteActive)
+                {
+                    WebsiteActive = Convert.ToBoolean(websiteActive);
+                }
+                else
+                {
+                    WebsiteActive = true;
+                }
             }
 
             if (!WebsiteActive)
@@ -122,7 +130,7 @@ namespace ButikProje.Controllers
         {
             ViewBag.CurrentPage = pageIndex;
 
-            int productCount = 0;
+            int productCount;
 
             productCount = await db.TblUrunTanims.CountAsync();
 
@@ -163,10 +171,7 @@ namespace ButikProje.Controllers
             return View(await GetModel(true));
         }
 
-        private static bool ValidateEmailFormat(string email)
-        {
-            return !string.IsNullOrWhiteSpace(email) && email.Length <= 320 && Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$");
-        }
+        private static bool ValidateEmailFormat(string email) => !string.IsNullOrWhiteSpace(email) && email.Length <= 320 && Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$");
 
         private static bool ValidatePasswordFormat(string password)
         {
@@ -198,10 +203,7 @@ namespace ButikProje.Controllers
             return (true, string.Empty);
         }
 
-        private string HashPassword(string password)
-        {
-            return BCryptNet.BCrypt.HashPassword(password, DefaultWorkFactor);
-        }
+        private string HashPassword(string password) => BCryptNet.BCrypt.HashPassword(password, DefaultWorkFactor);
 
         private async Task<TblButikKullanicilar> SaveUser(masterEntities db, string name, string surname, string email, string pwdHash, int role = DbUsers.UserRoleNumber)
         {
@@ -218,15 +220,9 @@ namespace ButikProje.Controllers
             return user;
         }
 
-        private bool VerifyUserPassword(TblButikKullanicilar user, string password)
-        {
-            return VerifyPasswordHash(password, user.ParolaHash);
-        }
+        private bool VerifyUserPassword(TblButikKullanicilar user, string password) => VerifyPasswordHash(password, user.ParolaHash);
 
-        private bool VerifyPasswordHash(string password, string storedHash)
-        {
-            return BCryptNet.BCrypt.Verify(password, storedHash);
-        }
+        private bool VerifyPasswordHash(string password, string storedHash) => BCryptNet.BCrypt.Verify(password, storedHash);
 
 
         [HttpPost]
@@ -244,7 +240,7 @@ namespace ButikProje.Controllers
 
                     using (masterEntities db = new masterEntities())
                     {
-                        TblButikKullanicilar userEfInstance = await db.TblButikKullanicilars.SingleOrDefaultAsync(x => x.Email == GirisEmail) ?? throw new SecurityException("Kullanıcı bulunamadı.");
+                        TblButikKullanicilar userEfInstance = await db.TblButikKullanicilars.SingleOrDefaultAsync(x => x.Email == GirisEmail) ?? throw new SecurityException("E-mail veya parola yanlış.");
                         if (VerifyUserPassword(userEfInstance, GirisParola))
                         {
                             string userName = userEfInstance.Id.ToString();
@@ -253,7 +249,7 @@ namespace ButikProje.Controllers
 
                             bool isAdmin = await db.TblAdmins.AnyAsync(x => x.KullaniciId == userEfInstance.Id);
 
-                            role = !isAdmin ? DbUsers.UserRoleName : DbUsers.AdminRoleName ;
+                            role = !isAdmin ? DbUsers.UserRoleName : DbUsers.AdminRoleName;
 
                             if (!Roles.IsUserInRole(userName, role))
                             {
@@ -677,10 +673,7 @@ namespace ButikProje.Controllers
         }
 
 
-        public async Task<ActionResult> Siparisler()
-        {
-            return View(await GetModel());
-        }
+        public async Task<ActionResult> Siparisler() => View(await GetModel());
 
         public async Task<ActionResult> Product(string name)
         {
@@ -959,7 +952,13 @@ namespace ButikProje.Controllers
 
             if (purchasingNow)
             {
-                int singleItemId = (TempData["SinglePurchaseItemID"] as int?) ?? (Session["SinglePurchaseItemID"] as int?) ?? 0;
+                int? singleItemId = (TempData["SinglePurchaseItemID"] as int?) ?? (Session["SinglePurchaseItemID"] as int?) ?? null;
+
+                if (singleItemId == null)
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+
                 Session.Remove("SinglePurchaseItemID");
 
                 dbInterface.ProductsInCart.Clear();
@@ -968,7 +967,7 @@ namespace ButikProje.Controllers
                 {
                     TblSepet tblSepet = new TblSepet
                     {
-                        UrunId = singleItemId,
+                        UrunId = singleItemId.Value,
                         KullaniciId = tempUser ? uid : Convert.ToInt32(User.Identity.Name)
                     };
 
@@ -988,7 +987,7 @@ namespace ButikProje.Controllers
             return View(dbInterface);
         }
 
-        public async Task<ActionResult> Purchase(string buyerName, string buyerSurname, string contactInfo, string address, string postalCode, string city, string country, string telno, string promoCode, bool saveInfo)
+        public async Task<ActionResult> Purchase(string buyerName, string buyerSurname, string contactInfo, string address, string postalCode, string city, string country, string telno, int size, string promoCode, bool saveInfo)
         {
             Options options = new Options
             {
@@ -1128,7 +1127,8 @@ namespace ButikProje.Controllers
                 order.TblSiparisItemlers = (tempUser ? await GetProductsInCart(db, uid) : await GetProductsInCart(db, Request, User.Identity)).Select(cartItem => new TblSiparisItemler
                 {
                     UrunId = cartItem.UrunId,
-                    SiparisId = conversationId
+                    SiparisId = conversationId,
+                    UrunBeden = size
                 }).ToList();
             }
             Session["Order"] = order;
@@ -1138,7 +1138,7 @@ namespace ButikProje.Controllers
             return View(await GetModel(true));
         }
 
-        public async Task<ActionResult> PurchaseItem(string buyerName, string buyerSurname, string contactInfo, string address, string postalCode, string city, string country, string telno, string promoCode, bool saveInfo)
+        public async Task<ActionResult> PurchaseItem(string buyerName, string buyerSurname, string contactInfo, string address, string postalCode, string city, string country, int size, string telno, string promoCode, bool saveInfo)
         {
             Options options = new Options
             {
@@ -1154,7 +1154,8 @@ namespace ButikProje.Controllers
             string productPrice = string.Empty;
             using (masterEntities db = new masterEntities())
             {
-                TblUrunTanim product = await db.TblUrunTanims.FirstAsync(x => x.UrunId == productId);
+                TblUrunTanim product = await db.TblUrunTanims.FirstOrDefaultAsync(x => x.UrunId == productId);
+                if (product == null) return RedirectToAction("Checkout");
 
                 productName = product.UrunIsim;
                 productCategory = product.UrunKategori;
@@ -1280,7 +1281,8 @@ namespace ButikProje.Controllers
                 TblSiparisItemler orderItem = new TblSiparisItemler
                 {
                     UrunId = productId,
-                    SiparisId = Convert.ToInt32(request.ConversationId)
+                    SiparisId = Convert.ToInt32(request.ConversationId),
+                    UrunBeden = size
                 };
 
                 order.TblSiparisItemlers.Add(orderItem);
@@ -1292,11 +1294,7 @@ namespace ButikProje.Controllers
             return View(await GetModel(true));
         }
 
-        private string Base64Encode(string plainText)
-        {
-            byte[] plainTextBytes = Encoding.UTF8.GetBytes(plainText);
-            return Convert.ToBase64String(plainTextBytes);
-        }
+        private string Base64Encode(string plainText) => Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
 
         private void RemovePaymentSessions()
         {
@@ -1305,7 +1303,7 @@ namespace ButikProje.Controllers
             Session.Remove("CurrentlySinglePurchasing");
         }
 
-        private async Task SendNewOrderNotifs(string[] deviceTokens)
+        private async Task SendNewOrderNotifs(masterEntities db, string[] deviceTokens)
         {
             List<Task> tasks = new List<Task>();
 
@@ -1322,9 +1320,44 @@ namespace ButikProje.Controllers
                 };
 
                 FirebaseMessaging messaging = FirebaseMessaging.GetMessaging(Startup.FirebaseApp);
-                tasks.Add(messaging.SendAsync(messageToSend));
+                Task task = messaging.SendAsync(messageToSend)
+                    .ContinueWith(async (sendTask) =>
+                    {
+                        if (sendTask.Exception != null)
+                        {
+                            if (sendTask.Exception.InnerException is FirebaseMessagingException fmex)
+                            {
+                                await HandleFmex(db, fmex, token);
+                            }
+                        }
+                    });
+
+                tasks.Add(task);
             }
+
             await Task.WhenAll(tasks);
+        }
+
+        private async Task HandleFmex(masterEntities db, FirebaseMessagingException fmex, string deviceToken)
+        {
+            if (fmex.MessagingErrorCode == MessagingErrorCode.Unregistered || fmex.MessagingErrorCode == MessagingErrorCode.InvalidArgument)
+            {
+                await RemoveExpiredToken(db, deviceToken);
+            }
+        }
+
+        private async Task RemoveExpiredToken(masterEntities db, string deviceToken)
+        {
+            TblCihazlar device = await db.TblCihazlars.FirstOrDefaultAsync(x => x.DeviceToken == deviceToken);
+            if (device == null) return;
+
+            db.TblCihazlars.Remove(device);
+            await db.SaveChangesAsync();
+        }
+
+        private enum ActionType
+        {
+            View, Redirector, Ajax
         }
 
         public async Task<ActionResult> Orders()
@@ -1361,7 +1394,7 @@ namespace ButikProje.Controllers
 
                             int[] adminIds = await DbUsers.GetIdsWithRole(db, "Admin");
                             string[] tokens = await db.TblCihazlars.Where(x => adminIds.Contains(x.UserId)).Select(x => x.DeviceToken).ToArrayAsync();
-                            await SendNewOrderNotifs(tokens);
+                            await SendNewOrderNotifs(db, tokens);
                         }
                         else
                         {
@@ -1438,7 +1471,7 @@ namespace ButikProje.Controllers
                         PaymentId = id,
                         Success = Convert.ToInt32(true)
                     };
-
+                   
                     db.TblPaymentStatus.Add(paymentStatus);
 
                     await db.SaveChangesAsync();
@@ -1465,9 +1498,6 @@ namespace ButikProje.Controllers
             }
         }
 
-        public async Task<ActionResult> UyelikSozlesmesi()
-        {
-            return View(await GetModel(true));
-        }
+        public async Task<ActionResult> UyelikSozlesmesi() => View(await GetModel(true));
     }
 }

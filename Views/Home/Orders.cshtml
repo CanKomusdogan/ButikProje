@@ -177,20 +177,12 @@
 @section scripts {
     @if (redirectedFromPayment)
     {
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                $('#paymentResultModal').modal('show');
-            });
-        </script>
+        <script src="~/Scripts/Orders/payment-result.js"></script>
     }
 
     @if (errOccured)
     {
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                $('#errMsgModal').modal('show');
-            });
-        </script>
+        <script src="~/Scripts/Orders/err.js"></script>
     }
 
 }

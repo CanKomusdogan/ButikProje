@@ -1,5 +1,4 @@
 ﻿using ButikProje.Models;
-using FirebaseAdmin.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -37,7 +36,9 @@ namespace ButikProje.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> SaveDeviceToken(string token)
+        public async Task<ActionResult> SaveDeviceToken(string token) => Json(new { result = await AddDeviceToken(token) });
+
+        private async Task<string> AddDeviceToken(string token)
         {
             string result;
             try
@@ -45,32 +46,25 @@ namespace ButikProje.Controllers
                 using (masterEntities db = new masterEntities())
                 {
                     int uid = Convert.ToInt32(User.Identity.Name);
-                    if (!await db.TblCihazlars.AnyAsync(x => x.DeviceToken == token && x.UserId == uid))
+
+                    TblCihazlar existingDevice = await db.TblCihazlars.FirstOrDefaultAsync(x => x.DeviceToken == token && x.UserId == uid);
+
+                    if (existingDevice == null)
                     {
-                        TblCihazlar device = db.TblCihazlars.Create();
-                        device.UserId = uid;
-                        device.DeviceToken = token;
-
-                        db.TblCihazlars.Add(device);
-
-                        await db.SaveChangesAsync();
-
-                        result = "Saved device token.";
-                    }
-                    else if (!await db.TblCihazlars.AnyAsync(x => x.DeviceToken == token))
-                    {
+                        // Remove any old tokens for this user
                         IQueryable<TblCihazlar> oldTokens = db.TblCihazlars.Where(x => x.UserId == uid && x.DeviceToken != token);
                         db.TblCihazlars.RemoveRange(oldTokens);
 
-                        TblCihazlar device = db.TblCihazlars.FirstOrDefault(x => x.UserId == uid);
-                        if (device != null)
+                        // Add the new token for the user
+                        TblCihazlar newDevice = new TblCihazlar
                         {
-                            device.DeviceToken = token;
-                        }
+                            UserId = uid,
+                            DeviceToken = token
+                        };
+                        db.TblCihazlars.Add(newDevice);
 
                         await db.SaveChangesAsync();
-
-                        result = "Saved device token.";
+                        result = "Device token saved successfully.";
                     }
                     else
                     {
@@ -83,7 +77,7 @@ namespace ButikProje.Controllers
                 result = "An error occurred while saving device token: " + ex.Message;
             }
 
-            return Json(new { result });
+            return result;
         }
 
         public async Task<ActionResult> SetSettings(bool websiteActive)
@@ -211,13 +205,13 @@ namespace ButikProje.Controllers
         }
 
         public async Task<ActionResult> EditSelectedProduct(int selectedProductId, string newName, string newPrice, string newDescription, bool onSale,
-            IEnumerable<HttpPostedFileBase> newFilePhotos, string newUrlPhotos, int? newCategory, string newSalePrice = "")
+            IEnumerable<HttpPostedFileBase> newFilePhotos, string newUrlPhotos, int? newCategory, int[] sizes, string newSalePrice = "")
         {
             try
             {
                 using (masterEntities db = new masterEntities())
                 {
-                    TblUrunTanim selectedProduct = await db.TblUrunTanims.Include(x => x.TblUrunFotoes).FirstOrDefaultAsync(x => x.UrunId == selectedProductId);
+                    TblUrunTanim selectedProduct = await db.TblUrunTanims.Include(x => x.TblUrunFotoes).FirstOrDefaultAsync(x => x.UrunId == selectedProductId) ?? throw new Exception("Ürün bulunamadı, bu hata ile tekrar karşılaşırsanız yazılımcı ile iletişime geçiniz.");
 
                     if (!string.IsNullOrWhiteSpace(newName))
                     {
@@ -231,6 +225,9 @@ namespace ButikProje.Controllers
 
                     SetProductPricing(selectedProduct, newPrice, onSale, newSalePrice);
                     await SetProductCategory(db, selectedProduct, newCategory);
+
+                    await SetProductSizes(db, selectedProductId, sizes);
+
                     await db.SaveChangesAsync();
 
                     List<string> photoServerPaths = new List<string>();
@@ -261,6 +258,13 @@ namespace ButikProje.Controllers
             return RedirectToActionWithHash(this, "Index", "2");
         }
 
+        private void DeleteProductSizes(masterEntities db, int productId)
+        {
+            IQueryable<TblUrunBedenleri> productSizes = db.TblUrunBedenleris.Where(x => x.UrunId == productId);
+
+            db.TblUrunBedenleris.RemoveRange(productSizes);
+        }
+
         public async Task<ActionResult> RemoveSelectedProduct(int selectedProductId)
         {
             try
@@ -270,6 +274,8 @@ namespace ButikProje.Controllers
                     TblUrunTanim selectedProduct = await db.TblUrunTanims.Include(x => x.TblUrunFotoes).FirstOrDefaultAsync(x => x.UrunId == selectedProductId);
 
                     DeleteOldPhotos(db, selectedProductId);
+                    DeleteProductSizes(db, selectedProductId);
+
                     db.TblUrunTanims.Remove(selectedProduct);
 
                     await db.SaveChangesAsync();
@@ -284,9 +290,38 @@ namespace ButikProje.Controllers
             return RedirectToActionWithHash(this, "Index", "2");
         }
 
+        /// <summary>
+        /// For the functions that add a new product, call after changes are saved since auto incrementing keys are set after save
+        /// </summary>
+        private async Task SetProductSizes(masterEntities db, int productId, int[] sizeIds)
+        {
+            List<TblUrunBedenleri> productSizesTbl = new List<TblUrunBedenleri>();
+
+            IQueryable<int> existingSizes = db.TblUrunBedenleris
+                .Where(p => p.UrunId == productId && sizeIds.Contains(p.BedenId))
+                .Select(p => p.BedenId);
+
+            foreach (int sizeId in sizeIds.Except(existingSizes))
+            {
+                TblUrunBedenleri productSize = new TblUrunBedenleri 
+                {
+                    UrunId = productId, BedenId = sizeId 
+                };
+
+                productSizesTbl.Add(productSize);
+            }
+
+            if (productSizesTbl.Any())
+            {
+                db.TblUrunBedenleris.AddRange(productSizesTbl);
+
+                await db.SaveChangesAsync();
+            }
+        }
+
         [HttpPost]
         public async Task<ActionResult> AddProduct(IEnumerable<HttpPostedFileBase> inputProductPhotos, string inputName, string inputDescription, string inputPrice, bool inputOnSale,
-            string inputPhotoUrls, int inputCategory, string inputOldPrice = "0")
+            string inputPhotoUrls, int inputCategory, int[] sizes, string inputOldPrice = "0")
         {
             List<string> photoServerPaths = new List<string>();
 
@@ -313,6 +348,8 @@ namespace ButikProje.Controllers
 
                     db.TblUrunTanims.Add(dbProductDisplay);
                     await db.SaveChangesAsync();
+
+                    await SetProductSizes(db, dbProductDisplay.UrunId, sizes);
 
                     AddNewPhotos(db, photoServerPaths, dbProductDisplay.UrunId);
 
@@ -416,10 +453,7 @@ namespace ButikProje.Controllers
 
             return RedirectToActionWithHash(this, "Index", "1");
         }
-        public PartialViewResult GetBannerContentForm()
-        {
-            return PartialView("TempFormCBC");
-        }
+        public PartialViewResult GetBannerContentForm() => PartialView("TempFormCBC");
 
         public async Task<ActionResult> ChangeFooterContent(string AltbilgiEdit)
         {
@@ -450,10 +484,7 @@ namespace ButikProje.Controllers
 
             return RedirectToActionWithHash(this, "Index", "1");
         }
-        public PartialViewResult GetFooterContentForm()
-        {
-            return PartialView("TempFormCFC");
-        }
+        public PartialViewResult GetFooterContentForm() => PartialView("TempFormCFC");
 
         private async Task<string> RemoveUser(masterEntities db, int uid)
         {
@@ -736,6 +767,39 @@ namespace ButikProje.Controllers
             }
 
             return RedirectToAction("Index", "Admin");
+        }
+
+        private async Task AddSize(masterEntities db, string name)
+        {
+            TblBedenler sizes = new TblBedenler 
+            {
+                Beden = name
+            };
+
+            db.TblBedenlers.Add(sizes);
+
+            string result = GetResultMessage(GetResult(await db.SaveChangesAsync() != 0, true));
+            TempData[Result] = result;
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> AddNewSize(string name)
+        {
+            try
+            {
+                using (masterEntities db = new masterEntities())
+                {
+                    await AddSize(db, name);
+                }
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         private string Base64Encode(string plainText)

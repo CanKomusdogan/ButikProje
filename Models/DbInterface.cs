@@ -17,6 +17,7 @@ namespace ButikProje.Models
         public List<TblSiparisler> Orders { get; set; }
         public int CartCount { get; set; }
         public List<TblKategoriler> ProductCategories { get; set; }
+        public List<TblBedenler> ProductSizes { get; set; }
         public TblIletisim ContactInfo { get; set; }
         public DbInterface()
         {
@@ -39,14 +40,15 @@ namespace ButikProje.Models
         public string Details { get; set; }
         public List<DbProductPhoto> Photos { get; set; }
         public string Category { get; set; }
-        public List<TblUrunBedenleri> Sizes { get; set; }
+        public List<TblBedenler> Sizes { get; set; }
 
         public DbProduct()
         {
             Photos = new List<DbProductPhoto>();
-            Sizes = new List<TblUrunBedenleri>();
+            Sizes = new List<TblBedenler>();
         }
     }
+
     public partial class DbProductPhoto
     {
         public int ID { get; set; }

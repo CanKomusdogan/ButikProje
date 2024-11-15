@@ -6,9 +6,7 @@ using System.Data.Entity;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Security.Principal;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
@@ -53,7 +51,6 @@ namespace ButikProje.Commons
                     Price = product.UrunFiyat,
                     OnSale = product.UrunIndirim != 0,
                     Category = product.UrunKategori,
-                    Sizes = product.TblUrunBedenleris.ToList(),
                     OldPrice = product.UrunIndirim != 0 ? product.UrunEskiFiyat : null
                 };
                 if (dbProduct.OnSale)
@@ -93,7 +90,7 @@ namespace ButikProje.Commons
             }
 
             List<TblUrunTanim> fetchedProducts = await products.ToListAsync();
-            List<DbProduct> dbProducts = fetchedProducts.Select(product =>
+            List<Task<DbProduct>> tasks = fetchedProducts.Select(async product =>
             {
                 DbProduct dbProduct = new DbProduct
                 {
@@ -103,15 +100,20 @@ namespace ButikProje.Commons
                     Price = product.UrunFiyat,
                     OnSale = product.UrunIndirim != 0,
                     Category = product.UrunKategori,
-                    Sizes = product.TblUrunBedenleris.ToList(),
+                    Sizes = await GetSizesOfProduct(product.UrunId),
                     OldPrice = product.UrunIndirim != 0 ? product.UrunEskiFiyat : null
                 };
+
                 if (dbProduct.OnSale)
                 {
                     dbProduct.SalePercentage = CalculateDiscountPercentage(dbProduct.OldPrice.GetValueOrDefault(), dbProduct.Price);
                 }
+
                 return dbProduct;
             }).ToList();
+
+            List<DbProduct> dbProducts = (await Task.WhenAll(tasks)).ToList();
+
 
             foreach (DbProduct dbProduct in dbProducts)
             {
@@ -129,7 +131,7 @@ namespace ButikProje.Commons
             IQueryable<TblUrunTanim> pagedProducts = products.Skip((page - 1) * PageSize).Take(PageSize);
 
             List<TblUrunTanim> fetchedProducts = await pagedProducts.ToListAsync();
-            List<DbProduct> dbProducts = fetchedProducts.Select(product =>
+            List<Task<DbProduct>> tasks = fetchedProducts.Select(async product =>
             {
                 DbProduct dbProduct = new DbProduct
                 {
@@ -139,15 +141,20 @@ namespace ButikProje.Commons
                     Price = product.UrunFiyat,
                     OnSale = product.UrunIndirim != 0,
                     Category = product.UrunKategori,
-                    Sizes = product.TblUrunBedenleris.ToList(),
+                    Sizes = await GetSizesOfProduct(product.UrunId),
                     OldPrice = product.UrunIndirim != 0 ? product.UrunEskiFiyat : null
                 };
+
                 if (dbProduct.OnSale)
                 {
                     dbProduct.SalePercentage = CalculateDiscountPercentage(dbProduct.OldPrice.GetValueOrDefault(), dbProduct.Price);
                 }
+
                 return dbProduct;
             }).ToList();
+
+            List<DbProduct> dbProducts = (await Task.WhenAll(tasks)).ToList();
+
 
             foreach (DbProduct dbProduct in dbProducts)
             {
@@ -162,7 +169,7 @@ namespace ButikProje.Commons
             IQueryable<TblUrunTanim> products = db.TblUrunTanims.Where(x => productIds.Contains(x.UrunId));
 
             List<TblUrunTanim> fetchedProducts = await products.ToListAsync();
-            List<DbProduct> dbProducts = fetchedProducts.Select(product =>
+            List<Task<DbProduct>> tasks = fetchedProducts.Select(async product =>
             {
                 DbProduct dbProduct = new DbProduct
                 {
@@ -172,15 +179,20 @@ namespace ButikProje.Commons
                     Price = product.UrunFiyat,
                     OnSale = product.UrunIndirim != 0,
                     Category = product.UrunKategori,
-                    Sizes = product.TblUrunBedenleris.ToList(),
+                    Sizes = await GetSizesOfProduct(product.UrunId),
                     OldPrice = product.UrunIndirim != 0 ? product.UrunEskiFiyat : null
                 };
+
                 if (dbProduct.OnSale)
                 {
                     dbProduct.SalePercentage = CalculateDiscountPercentage(dbProduct.OldPrice.GetValueOrDefault(), dbProduct.Price);
                 }
+
                 return dbProduct;
             }).ToList();
+
+            List<DbProduct> dbProducts = (await Task.WhenAll(tasks)).ToList();
+
 
             foreach (DbProduct dbProduct in dbProducts)
             {
@@ -204,7 +216,7 @@ namespace ButikProje.Commons
                 Price = product.UrunFiyat,
                 OnSale = product.UrunIndirim != 0,
                 Photos = await GetProductPhotos(db, product.UrunId),
-                Sizes = product.TblUrunBedenleris.ToList(),
+                Sizes = await GetSizesOfProduct(product.UrunId),
                 OldPrice = product.UrunIndirim != 0 ? product.UrunEskiFiyat : null,
                 SalePercentage = product.UrunIndirim != 0 ? CalculateDiscountPercentage(product.UrunEskiFiyat ?? 0, product.UrunFiyat) : (double?)null
             };
@@ -222,13 +234,13 @@ namespace ButikProje.Commons
             }
 
             List<DbProductPhoto> productPhotos = productImgs.TblUrunFotoes
-                                                            .Select(photo => new DbProductPhoto
-                                                            {
-                                                                ID = photo.FotoId,
-                                                                ConnectedProductID = photo.UrunId,
-                                                                PhotoContent = photo.UrunFoto
-                                                            })
-                                                            .ToList();
+                                                                .Select(photo => new DbProductPhoto
+                                                                {
+                                                                    ID = photo.FotoId,
+                                                                    ConnectedProductID = photo.UrunId,
+                                                                    PhotoContent = photo.UrunFoto
+                                                                })
+                                                                .ToList();
 
             return productPhotos;
         }
@@ -265,19 +277,19 @@ namespace ButikProje.Commons
 
         public enum Result
         {
-            Success = 0, Error = 1,
+            Success, Error,
         }
         public enum OccuredOn
         {
-            Login = 0, Register = 1,
-            Verification = 2, PasswordChange = 3
+            Login, Register,
+            Verification, PasswordChange
 
         }
         public enum ErrDetails
         {
-            InvalidLogin = 0, EmailExists = 1, EmailUnregistered = 2, NotAuthorized = 3,
-            ConnectionError = 4, FormatError = 5, AlreadySignedIn = 6,
-            EmptyInputs = 7, IncorrectVerificationCode = 8, ProductsInCartRemoved = 9
+            InvalidLogin, EmailExists, EmailUnregistered, NotAuthorized,
+            ConnectionError, FormatError, AlreadySignedIn,
+            EmptyInputs, IncorrectVerificationCode, ProductsInCartRemoved
         }
 
         public static string GetResultMessage(Result result)
@@ -328,14 +340,8 @@ namespace ButikProje.Commons
             return Result.Success;
         }
 
-        public static string GetDetailedResultMessage(ErrDetails err)
-        {
-            return GetResultMessage(Result.Error) + "\u0020" + GetResultMessageDetails(err: err);
-        }
-        public static string GetDetailedResultMessage(ErrDetails err, OccuredOn occuredOn)
-        {
-            return GetResultMessage(Result.Error, occuredOn) + "\u0020" + GetResultMessageDetails(err: err);
-        }
+        public static string GetDetailedResultMessage(ErrDetails err) => GetResultMessage(Result.Error) + "\u0020" + GetResultMessageDetails(err: err);
+        public static string GetDetailedResultMessage(ErrDetails err, OccuredOn occuredOn) => GetResultMessage(Result.Error, occuredOn) + "\u0020" + GetResultMessageDetails(err: err);
 
         public static string GetResultMessageDetails(ErrDetails err)
         {
@@ -407,10 +413,7 @@ namespace ButikProje.Commons
         /// Gets the cart count.
         /// </summary>
         /// <returns>The cart count of <paramref name="uid"/></returns>
-        public static async Task<int> GetCartCount(masterEntities db, int uid)
-        {
-            return await db.TblSepets.CountAsync(x => x.KullaniciId == uid);
-        }
+        public static async Task<int> GetCartCount(masterEntities db, int uid) => await db.TblSepets.CountAsync(x => x.KullaniciId == uid);
 
         /// <returns>Auto generated database class.</returns>
         public static async Task<List<TblSepet>> GetProductsInCart(masterEntities db, HttpRequestBase request, IIdentity identity)
@@ -427,10 +430,7 @@ namespace ButikProje.Commons
 
         }
         /// <returns>Auto generated database class.</returns>
-        public static async Task<List<TblSepet>> GetProductsInCart(masterEntities db, int uid)
-        {
-            return await db.TblSepets.Where(x => x.KullaniciId == uid).ToListAsync();
-        }
+        public static async Task<List<TblSepet>> GetProductsInCart(masterEntities db, int uid) => await db.TblSepets.Where(x => x.KullaniciId == uid).ToListAsync();
 
         /// <returns>Custom class.</returns>
         public static async Task<List<DbProduct>> GetDbProductsInCart(masterEntities db, HttpRequestBase request, IIdentity identity)
@@ -473,7 +473,7 @@ namespace ButikProje.Commons
         public static async Task<decimal?> GetTotalOfProductsInCart(masterEntities db, int uid)
         {
             List<TblSepet> productsInCart = await GetProductsInCart(db, uid);
-            if (productsInCart == null || productsInCart.Count == 0)
+            if (productsInCart == null || !productsInCart.Any())
             {
                 return null;
             }
@@ -512,22 +512,37 @@ namespace ButikProje.Commons
             return userFriendlyFilterText;
         }
 
+        public static async Task<List<TblBedenler>> GetSizes(masterEntities db) => await db.TblBedenlers.ToListAsync();
+
+        public static async Task<List<TblUrunBedenleri>> GetProductSizes(masterEntities db) => await db.TblUrunBedenleris.ToListAsync();
+        public static async Task<List<TblUrunBedenleri>> GetProductSizes(masterEntities db, int productId) => await db.TblUrunBedenleris.Where(x => x.UrunId == productId).ToListAsync();
+        public static async Task<List<TblBedenler>> GetSizesOfProduct(int productId)
+        {
+            using (masterEntities db = new masterEntities())
+            {
+                return await db.TblUrunBedenleris
+                    .Where(ub => ub.UrunId == productId)
+                    .Join(db.TblBedenlers,
+                        ub => ub.BedenId,
+                        b => b.Id,
+                        (ub, b) => b)
+                    .ToListAsync();
+            }
+        }
+        public static async Task<List<TblUrunBedenleri>> GetAllProductSizes(masterEntities db, IEnumerable<int> productIds) => await db.TblUrunBedenleris.Where(x => productIds.Contains(x.UrunId)).ToListAsync();
+
         /// <summary>
-        /// Don't use it if your view doesn't require 
+        /// Don't use it if your view doesn't require all data that is needed on most views.
         /// </summary>
-        /// <returns>All data that is needed on most views.</returns>
         public static async Task<DbInterface> GetDefaultModel(masterEntities db, HttpRequestBase request, IIdentity identity, Filters filters = Filters.Default)
         {
-            TblArayuz setInterface = await db.TblArayuzs.SingleAsync();
+            TblArayuz setInterface = await db.TblArayuzs.SingleOrDefaultAsync();
             DbInterface dbInterface = new DbInterface
             {
-                BannerTitle = setInterface.AfisBaslik,
-                BannerAltTitle = setInterface.AfisAltbaslik,
-                FooterText = setInterface.Altbilgi,
-                UserAgreement = setInterface.UyelikSozlesmesi,
                 Products = await GetProducts(db, filters),
                 CartCount = await GetCartCount(db, request, identity),
                 ProductsInCart = await GetProductsInCart(db, request, identity),
+                ProductSizes = await GetSizes(db),
                 ProductCategories = await db.TblKategorilers.ToListAsync(),
                 ContactInfo = await db.TblIletisims.SingleOrDefaultAsync()
             };
@@ -542,39 +557,49 @@ namespace ButikProje.Commons
                 dbInterface.Orders = await db.TblSiparislers.Include(x => x.TblSiparisItemlers).Where(x => x.SiparisKullaniciId == uid).OrderByDescending(x => x.SiparisId).ToListAsync();
             }
 
+            if (setInterface != null)
+            {
+                dbInterface.BannerTitle = setInterface.AfisBaslik;
+                dbInterface.BannerAltTitle = setInterface.AfisAltbaslik;
+                dbInterface.FooterText = setInterface.Altbilgi;
+                dbInterface.UserAgreement = setInterface.UyelikSozlesmesi;
+            }
+
             return dbInterface;
         }
         public static async Task<DbInterface> GetDefaultModel(masterEntities db, int uid, Filters filters = Filters.Default)
         {
-            TblArayuz setInterface = await db.TblArayuzs.SingleAsync();
+            TblArayuz setInterface = await db.TblArayuzs.SingleOrDefaultAsync();
             DbInterface dbInterface = new DbInterface
             {
-                BannerTitle = setInterface.AfisBaslik,
-                BannerAltTitle = setInterface.AfisAltbaslik,
-                FooterText = setInterface.Altbilgi,
-                UserAgreement = setInterface.UyelikSozlesmesi,
                 Products = await GetProducts(db, filters),
                 CartCount = await GetCartCount(db, uid),
                 ProductsInCart = await GetProductsInCart(db, uid),
+                ProductSizes = await GetSizes(db),
                 ProductCategories = await db.TblKategorilers.ToListAsync(),
                 ContactInfo = await db.TblIletisims.SingleOrDefaultAsync(),
                 Orders = await db.TblSiparislers.Include(x => x.TblSiparisItemlers).Where(x => x.SiparisKullaniciId == uid).OrderByDescending(x => x.SiparisId).ToListAsync()
             };
 
+            if (setInterface != null)
+            {
+                dbInterface.BannerTitle = setInterface.AfisBaslik;
+                dbInterface.BannerAltTitle = setInterface.AfisAltbaslik;
+                dbInterface.FooterText = setInterface.Altbilgi;
+                dbInterface.UserAgreement = setInterface.UyelikSozlesmesi;
+            }
+
             return dbInterface;
         }
         public static async Task<DbInterface> GetDefaultModel(masterEntities db, HttpRequestBase request, IIdentity identity, int page, Filters filters = Filters.Default)
         {
-            TblArayuz setInterface = await db.TblArayuzs.SingleAsync();
+            TblArayuz setInterface = await db.TblArayuzs.SingleOrDefaultAsync();
             DbInterface dbInterface = new DbInterface
             {
-                BannerTitle = setInterface.AfisBaslik,
-                BannerAltTitle = setInterface.AfisAltbaslik,
-                FooterText = setInterface.Altbilgi,
-                UserAgreement = setInterface.UyelikSozlesmesi,
                 Products = await GetProducts(db, filters, page),
                 CartCount = await GetCartCount(db, request, identity),
                 ProductsInCart = await GetProductsInCart(db, request, identity),
+                ProductSizes = await GetSizes(db),
                 ProductCategories = await db.TblKategorilers.ToListAsync(),
                 ContactInfo = await db.TblIletisims.SingleOrDefaultAsync()
             };
@@ -585,24 +610,37 @@ namespace ButikProje.Commons
                 dbInterface.Orders = await db.TblSiparislers.Include(x => x.TblSiparisItemlers).Where(x => x.SiparisKullaniciId == uid).OrderByDescending(x => x.SiparisId).ToListAsync();
             }
 
+            if (setInterface != null)
+            {
+                dbInterface.BannerTitle = setInterface.AfisBaslik;
+                dbInterface.BannerAltTitle = setInterface.AfisAltbaslik;
+                dbInterface.FooterText = setInterface.Altbilgi;
+                dbInterface.UserAgreement = setInterface.UyelikSozlesmesi;
+            }
+
             return dbInterface;
         }
         public static async Task<DbInterface> GetDefaultModel(masterEntities db, int uid, int page, Filters filters = Filters.Default)
         {
-            TblArayuz setInterface = await db.TblArayuzs.SingleAsync();
+            TblArayuz setInterface = await db.TblArayuzs.SingleOrDefaultAsync();
             DbInterface dbInterface = new DbInterface
             {
-                BannerTitle = setInterface.AfisBaslik,
-                BannerAltTitle = setInterface.AfisAltbaslik,
-                FooterText = setInterface.Altbilgi,
-                UserAgreement = setInterface.UyelikSozlesmesi,
                 Products = await GetProducts(db, filters, page),
                 CartCount = await GetCartCount(db, uid),
                 ProductsInCart = await GetProductsInCart(db, uid),
                 ProductCategories = await db.TblKategorilers.ToListAsync(),
+                ProductSizes = await GetSizes(db),
                 ContactInfo = await db.TblIletisims.SingleOrDefaultAsync(),
                 Orders = await db.TblSiparislers.Include(x => x.TblSiparisItemlers).Where(x => x.SiparisKullaniciId == uid).OrderByDescending(x => x.SiparisId).ToListAsync()
             };
+
+            if (setInterface != null)
+            {
+                dbInterface.BannerTitle = setInterface.AfisBaslik;
+                dbInterface.BannerAltTitle = setInterface.AfisAltbaslik;
+                dbInterface.FooterText = setInterface.Altbilgi;
+                dbInterface.UserAgreement = setInterface.UyelikSozlesmesi;
+            }
 
             return dbInterface;
         }
@@ -619,17 +657,21 @@ namespace ButikProje.Commons
         /// <returns>Minimal data to save performance when all of the data is not needed.</returns>
         public static async Task<DbInterface> GetMinimalModel(masterEntities db, HttpRequestBase request, IIdentity identity)
         {
-            TblArayuz setInterface = await db.TblArayuzs.SingleAsync();
+            TblArayuz setInterface = await db.TblArayuzs.SingleOrDefaultAsync();
             DbInterface dbInterface = new DbInterface
             {
-                BannerTitle = setInterface.AfisBaslik,
-                BannerAltTitle = setInterface.AfisAltbaslik,
-                FooterText = setInterface.Altbilgi,
-                UserAgreement = setInterface.UyelikSozlesmesi,
                 CartCount = await GetCartCount(db, request, identity),
                 ProductCategories = await db.TblKategorilers.ToListAsync(),
                 ContactInfo = await db.TblIletisims.SingleOrDefaultAsync()
             };
+
+            if (setInterface != null)
+            {
+                dbInterface.BannerTitle = setInterface.AfisBaslik;
+                dbInterface.BannerAltTitle = setInterface.AfisAltbaslik;
+                dbInterface.FooterText = setInterface.Altbilgi;
+                dbInterface.UserAgreement = setInterface.UyelikSozlesmesi;
+            }
 
             return dbInterface;
         }
@@ -637,17 +679,21 @@ namespace ButikProje.Commons
         /// <returns>Minimal data to save performance when all of the data is not needed.</returns>
         public static async Task<DbInterface> GetMinimalModel(masterEntities db, int uid)
         {
-            TblArayuz setInterface = await db.TblArayuzs.SingleAsync();
+            TblArayuz setInterface = await db.TblArayuzs.SingleOrDefaultAsync();
             DbInterface dbInterface = new DbInterface
             {
-                BannerTitle = setInterface.AfisBaslik,
-                BannerAltTitle = setInterface.AfisAltbaslik,
-                FooterText = setInterface.Altbilgi,
-                UserAgreement = setInterface.UyelikSozlesmesi,
                 CartCount = await GetCartCount(db, uid),
                 ProductCategories = await db.TblKategorilers.ToListAsync(),
                 ContactInfo = await db.TblIletisims.SingleOrDefaultAsync(),
             };
+
+            if (setInterface != null)
+            {
+                dbInterface.BannerTitle = setInterface.AfisBaslik;
+                dbInterface.BannerAltTitle = setInterface.AfisAltbaslik;
+                dbInterface.FooterText = setInterface.Altbilgi;
+                dbInterface.UserAgreement = setInterface.UyelikSozlesmesi;
+            }
 
             return dbInterface;
         }
@@ -655,7 +701,9 @@ namespace ButikProje.Commons
         public static RedirectResult RedirectToActionWithHash(Controller controller, string actionName, string hash)
         {
             if (controller == null)
+            {
                 throw new ArgumentNullException(nameof(controller));
+            }
 
             ControllerContext controllerContext = controller.ControllerContext;
             string controllerName = controllerContext.RouteData.Values["controller"]?.ToString();
@@ -676,10 +724,7 @@ namespace ButikProje.Commons
                    (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
-        public static bool IsFilePath(string input)
-        {
-            return Path.IsPathRooted(input) && !input.Contains(Uri.SchemeDelimiter);
-        }
+        public static bool IsFilePath(string input) => Path.IsPathRooted(input) && !input.Contains(Uri.SchemeDelimiter);
 
         public static bool TryConvertToInt(object obj, out int result)
         {
@@ -713,59 +758,6 @@ namespace ButikProje.Commons
             }
 
             return char.ToUpper(str[0], CultureInfo.InvariantCulture) + str.Substring(1);
-        }
-    }
-
-    public class EncryptionHelper
-    {
-        private static readonly byte[] Key = Encoding.UTF8.GetBytes("Banyemicem316912*");
-        private static readonly byte[] IV = new byte[16];
-
-        public static string Encrypt(string plainText)
-        {
-            using (Aes aesAlg = Aes.Create())
-            {
-                aesAlg.Key = Key;
-                aesAlg.IV = IV;
-
-                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
-
-                using (MemoryStream msEncrypt = new MemoryStream())
-                {
-                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-                    {
-                        using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
-                        {
-                            swEncrypt.Write(plainText);
-                        }
-                    }
-                    return Convert.ToBase64String(msEncrypt.ToArray());
-                }
-            }
-        }
-
-        public static string Decrypt(string cipherText)
-        {
-            byte[] cipherBytes = Convert.FromBase64String(cipherText);
-
-            using (Aes aesAlg = Aes.Create())
-            {
-                aesAlg.Key = Key;
-                aesAlg.IV = IV;
-
-                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
-
-                using (MemoryStream msDecrypt = new MemoryStream(cipherBytes))
-                {
-                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                    {
-                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
-                        {
-                            return srDecrypt.ReadToEnd();
-                        }
-                    }
-                }
-            }
         }
     }
 }
