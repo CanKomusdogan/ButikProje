@@ -339,7 +339,6 @@
       <LastGenOutput>Database1.cs</LastGenOutput>
     </Content>
     <Content Include="src\AdminIndex\err.js" />
-    <Content Include="webpack.config.js" />
     <TypeScriptCompile Include="src\AdminIndex\main.ts" />
     <Content Include="src\AdminIndex\notifications.js" />
     <Content Include="Scripts\bootstrap.bundle.js" />

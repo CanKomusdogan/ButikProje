@@ -27,7 +27,7 @@ const productViewSwiper = new Swiper('#productViewSwiper', {
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    var hash = window.location.hash;
+    const hash = window.location.hash;
 
     if (hash) {
         $('.nav-pills a[href="' + hash + '"]').tab('show');
@@ -61,14 +61,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             productViewSwiper.removeAllSlides();
             (response.selectedProductPhotos as string[]).forEach((photo) => {
-                var newImage = document.createElement("img");
+                const newImage = document.createElement("img");
                 newImage.setAttribute("loading", "lazy");
                 newImage.style.width = "261px";
                 newImage.style.height = "400px";
                 newImage.classList.add("img-fluid", "product-photo");
                 newImage.src = photo;
 
-                var newSlide = document.createElement("div");
+                const newSlide = document.createElement("div");
 
                 newSlide.classList.add("swiper-slide");
                 newSlide.appendChild(newImage);
@@ -234,13 +234,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         inputUrlPhotoList.value += inputProductUrlPhotoPreviewValue + "\n";
 
-        var newImage = document.createElement("img");
+        const newImage = document.createElement("img");
         newImage.style.width = "261px";
         newImage.style.height = "400px";
         newImage.classList.add("img-fluid", "product-photo");
         newImage.src = inputProductUrlPhotoPreviewValue;
 
-        var newSlide = document.createElement("div");
+        const newSlide = document.createElement("div");
 
         newSlide.classList.add("swiper-slide");
         newSlide.appendChild(newImage);
@@ -253,13 +253,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         newUrlPhotoList.value += inputProductUrlPhotoPreviewValue + "\n";
 
-        var newImage = document.createElement("img");
+        const newImage = document.createElement("img");
         newImage.style.width = "261px";
         newImage.style.height = "400px";
         newImage.classList.add("img-fluid", "product-photo");
         newImage.src = inputProductUrlPhotoPreviewValue;
 
-        var newSlide = document.createElement("div");
+        const newSlide = document.createElement("div");
 
         newSlide.classList.add("swiper-slide");
         newSlide.appendChild(newImage);
@@ -302,21 +302,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById("inputProductPhotoPreview")?.addEventListener("change", function (event) {
 
-        var files = (event.target as HTMLInputElement).files;
+        const files = (event.target as HTMLInputElement).files;
         if (files != null) {
-            for (var i = 0; i < files.length; i++) {
-                var reader = new FileReader();
+            for (let i = 0; i < files.length; i++) {
+                const reader = new FileReader();
 
                 reader.onload = (function (file) {
                     return function (e) {
 
-                        var newImage = document.createElement("img");
+                        const newImage = document.createElement("img");
                         newImage.style.width = "261px";
                         newImage.style.height = "400px";
                         newImage.classList.add("img-fluid", "product-photo");
                         newImage.src = e.target?.result as string;
 
-                        var newSlide = document.createElement("div");
+                        const newSlide = document.createElement("div");
 
                         newSlide.classList.add("swiper-slide");
                         newSlide.appendChild(newImage);
@@ -330,22 +330,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
     document.getElementById('newProductPhotoPreview')?.addEventListener('change', function (event) {
-        var files = (event.target as HTMLInputElement).files;
+        const files = (event.target as HTMLInputElement).files;
 
         if (files != null) {
-            for (var i = 0; i < files.length; i++) {
-                var reader = new FileReader();
+            for (let i = 0; i < files.length; i++) {
+                const reader = new FileReader();
 
                 reader.onload = (function (file) {
                     return function (e) {
 
-                        var newImage = document.createElement("img");
+                        const newImage = document.createElement("img");
                         newImage.style.width = "261px";
                         newImage.style.height = "400px";
                         newImage.classList.add("img-fluid", "product-photo");
                         newImage.src = e.target?.result as string;
 
-                        var newSlide = document.createElement("div");
+                        const newSlide = document.createElement("div");
 
                         newSlide.classList.add("swiper-slide");
                         newSlide.appendChild(newImage);
@@ -490,14 +490,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 productViewSwiper.removeAllSlides();
                 (response.selectedProductPhotos as string[]).forEach((photo) => {
-                    var newImage = document.createElement("img");
+                    const newImage = document.createElement("img");
                     newImage.setAttribute("loading", "lazy");
                     newImage.style.width = "261px";
                     newImage.style.height = "400px";
                     newImage.classList.add("img-fluid", "product-photo");
                     newImage.src = photo;
 
-                    var newSlide = document.createElement("div");
+                    const newSlide = document.createElement("div");
 
                     newSlide.classList.add("swiper-slide");
                     newSlide.appendChild(newImage);
@@ -594,4 +594,4 @@ function editModal(button: HTMLButtonElement) {
     }
 }
 
-// What? You and i both know that react is dogshit. Blame it on the language that was created in 10 days, not me.
+// What? You and i both know that React is dogshit. Blame it on the language that was created in 10 days, not me.

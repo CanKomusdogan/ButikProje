@@ -41,8 +41,8 @@
                         })
                     </div>
 
-                    <div class="col">
-                        <a id="passwordChangeButton" style="cursor: pointer" class="d-flex flex-row-reverse text-black"
+                    <div class="col d-flex flex-row-reverse">
+                        <a id="passwordChangeButton" style="cursor: pointer" class="text-black"
                            data-bs-toggle="modal" data-bs-target="#passwordChangeModal">Parolamı unuttum</a>
                     </div>
                 </div>
@@ -284,20 +284,20 @@
 
     @if (errorOccured)
     {
-        <script src="~/Scripts/Login/err.js"></script>
+        <script src="~/src/Login/err.js"></script>
     }
 
-    <script src="~/dist/Login/main.js"></script>
+    <script src="~/CompiledTS/Login/main.js"></script>
 
     @if ((bool)ViewBag.PasswordChangeVerificationStarted)
     {
-        <script src="~/dist/Login/pwd-change-verify.js"></script>
+        <script src="~/CompiledTS/Login/pwd-change-verify.js"></script>
     }
 
 
     @if ((bool)ViewBag.VerificationStarted)
     {
-        <script src="~/dist/Login/email-verify.js"></script>
+        <script src="~/CompiledTS/Login/email-verify.js"></script>
     }
 }
 
