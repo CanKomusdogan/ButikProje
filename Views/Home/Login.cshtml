@@ -49,7 +49,7 @@
                 <div class="row g-2">
                     <div class="col">
                         <div class="form-check mb-1">
-                            <input formnovalidate="formnovalidate" onchange="toggle()" id="pwdShow" name="ParolaGoster" type="checkbox" class="form-check-input" />
+                            <input formnovalidate="formnovalidate" id="pwdShow" name="ParolaGoster" type="checkbox" class="form-check-input" />
                             <label for="pwdShow" class="form-check-label">Parolayı Göster</label>
                         </div>
                     </div>
@@ -284,20 +284,20 @@
 
     @if (errorOccured)
     {
-        <script src="~/src/Login/err.js"></script>
+        <script src="~/dist/Login/err.js"></script>
     }
 
-    <script src="~/CompiledTS/Login/main.js"></script>
+    <script src="~/dist/Login/main.js"></script>
 
     @if ((bool)ViewBag.PasswordChangeVerificationStarted)
     {
-        <script src="~/CompiledTS/Login/pwd-change-verify.js"></script>
+        <script src="~/dist/Login/pwd-change-verify.js"></script>
     }
 
 
     @if ((bool)ViewBag.VerificationStarted)
     {
-        <script src="~/CompiledTS/Login/email-verify.js"></script>
+        <script src="~/dist/Login/email-verify.js"></script>
     }
 }
 

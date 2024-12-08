@@ -1,4 +1,5 @@
-﻿import Swiper from "../../node_modules/swiper/swiper";
+﻿declare var Swiper: any;
+
 
 const swiper = new Swiper('.swiper-all', {
     loop: true,

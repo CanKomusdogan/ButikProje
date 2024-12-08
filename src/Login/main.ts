@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const passwordChangeModal = $('#passwordChangeModal');
         passwordChangeModal.removeClass('fade').modal('show').addClass('fade');
     }
+
+    document.getElementById('pwdShow')?.addEventListener('change', toggle);
 });
 
 const elements = {

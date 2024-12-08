@@ -1,4 +1,5 @@
-﻿import Swiper from "../../node_modules/swiper/swiper";
+﻿declare var Swiper: any;
+
 
 const productAddingSwiper = new Swiper('#productAddingSwiper', {
     spaceBetween: 30,

@@ -9,7 +9,7 @@ function resetHash() {
     window.location.hash = '';
 }
 document.addEventListener('DOMContentLoaded', function () {
-    var _a, _b;
+    var _a, _b, _c;
     (_a = document.getElementById('passwordChangeButton')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
         changeHash();
     });
@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const passwordChangeModal = $('#passwordChangeModal');
         passwordChangeModal.removeClass('fade').modal('show').addClass('fade');
     }
+    (_c = document.getElementById('pwdShow')) === null || _c === void 0 ? void 0 : _c.addEventListener('change', toggle);
 });
 const elements = {
     loginPwd: document.getElementById('loginPassword'),

@@ -65,10 +65,10 @@
                                                         if (product != null)
                                                         {
                                                             TblUrunFoto productPhoto = product.TblUrunFotoes.OrderByDescending(x => x.FotoId).FirstOrDefault();
-                                                            string photo = productPhoto.UrunFoto;
-                                                            if (productPhoto != null && !string.IsNullOrWhiteSpace(photo))
+                                                            
+                                                            if (productPhoto != null && !string.IsNullOrWhiteSpace(productPhoto.UrunFoto))
                                                             {
-                                                                <img class="img-fluid rounded-1" loading="lazy" width="70" height="105" src="@photo" />
+                                                                <img class="img-fluid rounded-1" loading="lazy" width="70" height="105" src="@productPhoto.UrunFoto" />
                                                             }
 
                                                             <p>@product.UrunIsim</p>
@@ -844,14 +844,14 @@
 
     @section scripts {
 
-        <script src="~/src/AdminIndex/notifications.js" type="module">
+        <script src="~/dist/AdminIndex/notifications.js" type="module">
         </script>
 
-        <script src="~/CompiledTS/AdminIndex/main.js"></script>
+        <script type="module" src="~/dist/AdminIndex/main.js"></script>
 
         @if (errorOcurred)
         {
-            <script src="~/src/AdminIndex/err.js"></script>
+            <script src="~/dist/AdminIndex/err.js"></script>
         }
     }
 </main>
